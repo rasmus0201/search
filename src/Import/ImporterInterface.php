@@ -6,7 +6,7 @@ interface ImporterInterface
 {
     public function __construct($filePath);
 
-    public function entries();
+    public function parse($directionId);
 
-    public function lemmas();
+    public function toSql();
 }

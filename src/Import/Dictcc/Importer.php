@@ -1,11 +1,11 @@
 <?php
 
-namespace Search\Import;
+namespace Search\Import\Dictcc;
 
 use Search\Import\ImporterInterface;
-use Search\Import\Models\Entry;
+use Search\Import\Dictcc\Models\Entry;
 
-class DictccImporter implements ImporterInterface
+class Importer implements ImporterInterface
 {
     private $lines;
     private $entries;
@@ -16,7 +16,7 @@ class DictccImporter implements ImporterInterface
         $this->lines = array_filter(preg_split('/[\n\r]+/', $fileContents));
     }
 
-    public function parse()
+    public function parse($directionId)
     {
         // <angle> ..... abbreviations/acronyms   (don't count as words for sorting, but act as keywords)
         // [square] ..... visible comments   (don't count as words for sorting, don't act as keywords)
@@ -35,38 +35,48 @@ class DictccImporter implements ImporterInterface
             $wordclass = '';
             $subject = '';
 
-            // When 4 this means there is a wordclass
-            // and subject
-            if (count($data) === 4) {
+            if (count($data) > 2) {
                 $wordclass = $data[2];
+            }
+
+            if (count($data) > 3) {
                 $subject = $data[3];
             }
 
             $entry = new Entry();
 
+            $entry->directionId = $directionId;
             $entry->headword = $headword;
             $entry->translation = $translation;
             $entry->wordclass = $wordclass;
-            $entry->subjects = $entry->getParsedSubjects($subject);
 
+            $entry->subjects = $entry->getParsedSubjects($subject);
             $entry->parseHeadword();
             $entry->parseTranslation();
 
-            dump();
-
-            $this->entries[] = $entry;
+            $this->entries[] = $entry->jsonSerialize();
         }
 
         return $this;
     }
 
-    public function entries()
+    public function toSql()
     {
-        dump($this->entries);
-    }
+        $values = '';
+        $params = [];
+        foreach ($this->entries as $entryData) {
+            $values .= '(';
 
-    public function lemmas()
-    {
+            foreach ($entryData as $column => $value) {
+                $values .= '?, ';
+                $params[] = $value;
+            }
 
+            $values = rtrim($values, ', ') . '), ';
+        }
+
+        $values = rtrim($values, ', ');
+
+        return [$values, $params];
     }
 }

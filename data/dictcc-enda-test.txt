@@ -6,7 +6,6 @@
 # License	https://www.dict.cc/translation_file_request.php
 # Brought to you by	Paul Hemetsberger and the users of https://www.dict.cc/, 2002 - 2020
 
-(common) anaconda [Eunectes murinus] [2nd comment]	stor anakonda {fk}	noun	[zool.] [head.]
 (a) year and a half	halvandet år {n}	noun
 (aerodynamic) drag	luftmodstand {fk}	noun	[phys.]
 (as) poor as a church mouse	fattig som en kirkerotte		[idiom]

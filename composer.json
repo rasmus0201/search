@@ -6,7 +6,9 @@
             "email": "xxr@live.dk"
         }
     ],
-    "require": {},
+    "require": {
+        "vlucas/phpdotenv": "^4.1"
+    },
     "autoload": {
         "psr-4": {
             "Search\\": "./src"

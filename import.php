@@ -1,11 +1,14 @@
 <?php
 
 require 'run.php';
+require 'db.php';
 
-use Search\Import\DictccImporter;
+use Search\Import\Dictcc\Importer;
 
 $fileName = DATA_PATH . '/dictcc-enda-test.txt';
+$directionId = 1;
 
-$importer = new DictccImporter($fileName);
+$importer = new Importer($fileName);
+list($valuesSql, $params) = $importer->parse($directionId)->toSql();
 
-$entries = $importer->parse()->entries();
+$stmt = DB::run("INSERT INTO entries VALUES " . $valuesSql, $params);
