@@ -1,0 +1,15 @@
+{
+    "name": "rasmus/search",
+    "authors": [
+        {
+            "name": "rasmus0201",
+            "email": "xxr@live.dk"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Search\\": "./src"
+        }
+    }
+}
