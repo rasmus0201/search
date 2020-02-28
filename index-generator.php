@@ -2,6 +2,8 @@
 
 require 'run.php';
 
+// Look into teamtnt/tntsearch
+
 use Search\DB;
 use Search\DefaultTermNormalizer;
 use Search\Indexing\DictccTransformer;
