@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.7.28)
 # Database: search
-# Generation Time: 2020-02-28 07:17:22 +0000
+# Generation Time: 2020-02-28 11:39:01 +0000
 # ************************************************************
 
 
@@ -30,6 +30,17 @@ CREATE TABLE `dictionaries` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+LOCK TABLES `dictionaries` WRITE;
+/*!40000 ALTER TABLE `dictionaries` DISABLE KEYS */;
+
+INSERT INTO `dictionaries` (`id`, `name`, `publisher`)
+VALUES
+	(1,'Dictcc DA <-> EN','Dictcc'),
+	(2,'Dictcc DA <-> DE','Dictcc'),
+	(3,'Dictcc EN <-> DE','Dictcc');
+
+/*!40000 ALTER TABLE `dictionaries` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table directions
@@ -42,6 +53,20 @@ CREATE TABLE `directions` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+LOCK TABLES `directions` WRITE;
+/*!40000 ALTER TABLE `directions` DISABLE KEYS */;
+
+INSERT INTO `directions` (`id`, `dictionary_id`, `name`)
+VALUES
+	(1,1,'DA -> EN'),
+	(2,1,'EN -> DA'),
+	(3,2,'DA -> DE'),
+	(4,2,'DE -> DA'),
+	(5,3,'EN -> DE'),
+	(6,3,'DE -> EN');
+
+/*!40000 ALTER TABLE `directions` ENABLE KEYS */;
+UNLOCK TABLES;
 
 
 # Dump of table entries
@@ -54,7 +79,8 @@ CREATE TABLE `entries` (
   `translation` varchar(255) NOT NULL DEFAULT '',
   `wordclass` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_entry` (`direction_id`,`headword`, `translation`,`wordclass`)
+  UNIQUE KEY `unique_entry` (`direction_id`,`headword`,`translation`,`wordclass`),
+  KEY `idx_direction_headword` (`direction_id`,`headword`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -84,22 +110,16 @@ CREATE TABLE `lemmas` (
 
 
 
-# Dump of table phrase_index
-# ------------------------------------------------------------
-
-CREATE TABLE `phrase_index` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
 # Dump of table search_index
 # ------------------------------------------------------------
 
 CREATE TABLE `search_index` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  PRIMARY KEY (`id`)
+  `entry_id` int(11) NOT NULL,
+  `term` varchar(255) NOT NULL DEFAULT '',
+  `position` mediumint(9) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_term` (`term`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
