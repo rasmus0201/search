@@ -5,9 +5,9 @@
 # http://www.sequelpro.com/
 # https://github.com/sequelpro/sequelpro
 #
-# Host: 127.0.0.1 (MySQL 5.7.24)
+# Host: 127.0.0.1 (MySQL 5.7.28)
 # Database: search
-# Generation Time: 2020-02-27 20:46:53 +0000
+# Generation Time: 2020-02-28 07:17:22 +0000
 # ************************************************************
 
 
@@ -32,24 +32,12 @@ CREATE TABLE `dictionaries` (
 
 
 
-# Dump of table dictionary_has_many_directions
-# ------------------------------------------------------------
-
-CREATE TABLE `dictionary_has_many_directions` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `dictionary_id` int(11) NOT NULL,
-  `direction_id` int(11) NOT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_dictionary_direction` (`dictionary_id`,`direction_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
 # Dump of table directions
 # ------------------------------------------------------------
 
 CREATE TABLE `directions` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `dictionary_id` int(11) NOT NULL,
   `name` varchar(11) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -66,7 +54,7 @@ CREATE TABLE `entries` (
   `translation` varchar(255) NOT NULL DEFAULT '',
   `wordclass` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_entry` (`direction_id`,`headword`,`wordclass`)
+  UNIQUE KEY `unique_entry` (`direction_id`,`headword`, `translation`,`wordclass`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

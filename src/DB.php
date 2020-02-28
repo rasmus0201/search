@@ -1,5 +1,9 @@
 <?php
 
+namespace Search;
+
+use PDO;
+
 class DB
 {
     protected static $instance = null;

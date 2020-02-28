@@ -4,9 +4,7 @@ namespace Search\Import;
 
 interface ImporterInterface
 {
-    public function __construct($filePath);
+    public function __construct($filePath, $directionId);
 
-    public function parse($directionId);
-
-    public function toSql();
+    public function import($tableName);
 }

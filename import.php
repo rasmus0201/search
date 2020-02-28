@@ -1,14 +1,43 @@
 <?php
 
 require 'run.php';
-require 'db.php';
 
 use Search\Import\Dictcc\Importer;
 
-$fileName = DATA_PATH . '/dictcc-enda-test.txt';
-$directionId = 1;
+$imports = [
+    [
+        'filename' => DATA_PATH . '/dictcc-daen.txt',
+        'direction_id' => 1,
+    ],
+    [
+        'filename' => DATA_PATH . '/dictcc-enda.txt',
+        'direction_id' => 2,
+    ],
+    [
+        'filename' => DATA_PATH . '/dictcc-dade.txt',
+        'direction_id' => 3,
+    ],
+    [
+        'filename' => DATA_PATH . '/dictcc-deda.txt',
+        'direction_id' => 4,
+    ],
+    [
+        'filename' => DATA_PATH . '/dictcc-ende.txt',
+        'direction_id' => 5,
+    ],
+    [
+        'filename' => DATA_PATH . '/dictcc-deen.txt',
+        'direction_id' => 6,
+    ],
+];
 
-$importer = new Importer($fileName);
-list($valuesSql, $params) = $importer->parse($directionId)->toSql();
+foreach ($imports as $import) {
+    $fileName = $import['filename'];
 
-$stmt = DB::run("INSERT INTO entries VALUES " . $valuesSql, $params);
+    echo 'Started importing '. $fileName . PHP_EOL;
+
+    $importer = new Importer($fileName, $import['direction_id']);
+    $importer->import('entries');
+
+    echo 'Finished importing '. $fileName . PHP_EOL;
+}

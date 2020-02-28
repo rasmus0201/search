@@ -22,7 +22,7 @@ class Entry implements \JsonSerializable
     {
         return [
             'id' => $this->id,
-            'directionId' => $this->directionId,
+            'direction_id' => $this->directionId,
             'headword' => $this->headword,
             'translation' => $this->translation,
             'wordclass' => $this->wordclass,
@@ -33,10 +33,12 @@ class Entry implements \JsonSerializable
     {
         $this->headwordAbbreviations = $this->getAnglebrackets($this->headword);
         $this->headwordComments = $this->getSquarebrackets($this->headword);
+        $wordTypes = $this->getCurlybrackets($this->headword);
 
         $this->headword = str_replace($this->headwordAbbreviations, '', $this->headword);
         $this->headword = str_replace($this->headwordComments, '', $this->headword);
-        $this->headword = trim($this->headword);
+        $this->headword = str_replace($wordTypes, '', $this->headword);
+        $this->headword = trim(preg_replace('/[[:blank:]]+/', ' ', $this->headword));
     }
 
     public function parseTranslation()
