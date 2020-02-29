@@ -2,29 +2,18 @@
 
 namespace Search\Indexing;
 
-use Search\Indexing\IndexItem;
+use Search\Indexing\Document;
 use Search\Indexing\IndexTransformerInterface;
 
 class DictccTransformer implements IndexTransformerInterface
 {
-    public function transform(array $document) : IndexItem
+    public function transform(array $row) : Document
     {
-        $item = new IndexItem();
+        $item = new Document();
 
-        $item->setDocument($document);
-        $item->setTerm($document['headword']);
-        $item->setId($document['id']);
+        $item->setId($row['id']);
+        $item->setDocument($row['headword']);
 
         return $item;
-    }
-
-    public function reverse(IndexItem $indexItem) : array
-    {
-        return array_merge($indexItem->getDocument(),
-            [
-                'id'       => $indexItem->getId(),
-                'headword' => $indexItem->getWord()
-            ]
-        );
     }
 }

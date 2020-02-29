@@ -113,14 +113,43 @@ CREATE TABLE `lemmas` (
 # Dump of table search_index
 # ------------------------------------------------------------
 
-CREATE TABLE `search_index` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `entry_id` int(11) NOT NULL,
-  `term` varchar(255) NOT NULL DEFAULT '',
-  `position` mediumint(9) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_term` (`term`)
+-- CREATE TABLE `search_index` (
+--   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+--   `entry_id` int(11) NOT NULL,
+--   `term` varchar(255) NOT NULL DEFAULT '',
+--   `position` mediumint(9) NOT NULL,
+--   PRIMARY KEY (`id`),
+--   KEY `idx_term` (`term`)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE IF NOT EXISTS term_index (
+    `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
+    `term` VARCHAR(255),
+    `num_hits` INT(11),
+    `num_docs` INT(11),
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `unique_term` (`term`),
+    KEY `idx_term` (`term`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS document_index (
+    `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
+    `document_id` INT(11) unsigned,
+    `term_id` INT(11) unsigned,
+    `position` INT(11) unsigned,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `unique_document_term_position` (`document_id`, `term_id`, `position`),
+    KEY `idx_term_position` (`term_id`, `position`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS info (
+    `key` VARCHAR(255),
+    `value` INT(11),
+    PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO info (`key`, `value`) values ('total_documents', 0);
 
 
 

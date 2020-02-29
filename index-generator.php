@@ -2,31 +2,34 @@
 
 require 'run.php';
 
-// Look into teamtnt/tntsearch
-
-use Search\DB;
-use Search\DefaultTermNormalizer;
+use Search\DefaultNormalizer;
+use Search\DefaultTokenizer;
 use Search\Indexing\DictccTransformer;
 use Search\Indexing\Indexer;
+use Search\Support\Config;
+
+Search\DB::run("DROP TABLE IF EXISTS info");
+Search\DB::run("DROP TABLE IF EXISTS term_index");
+Search\DB::run("DROP TABLE IF EXISTS document_index");
+sleep(1);
+
+$config = new Config();
+$config->setHost('localhost');
+$config->setDatabase('search');
+$config->setUsername('root');
+$config->setPassword('');
 
 $indexer = new Indexer(
+    $config,
     new DictccTransformer(),
-    new DefaultTermNormalizer()
+    new DefaultNormalizer(),
+    new DefaultTokenizer()
 );
 
-$entries = DB::run(
-    "
-        SELECT * FROM entries
-        WHERE direction_id = :direction
-        ORDER BY RAND()
-        LIMIT :limit
-    ",
-    ['direction' => 2, 'limit' => 10]
-)->fetchAll(\PDO::FETCH_ASSOC);
+$indexer->query("
+    SELECT e.`id`, e.`headword` FROM `entries` e
+    LIMIT :limit
+", ['limit' => 100000]);
 
-foreach ($indexer->index($entries) as $entryId => $indexItem) {
-    echo 'Headword: ' .$indexItem->getDocument()['headword'] . '<br>';
-    echo "<pre>    " . $indexItem->getTerm() .' '.$entryId.':'.$indexItem->getPosition() . "</pre>";
-    echo '<br>';
-    echo '<br>';
-}
+
+$indexer->run();

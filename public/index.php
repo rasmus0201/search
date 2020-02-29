@@ -1,6 +1,14 @@
 <?php
-// require '../run.php';
-//
+
+require '../run.php';
+
+$root = $_SERVER['DOCUMENT_ROOT'] . $_SERVER['REQUEST_URI'];
+
+if (file_exists($root) && !in_array($_SERVER['REQUEST_URI'], ['/index.php', '/', ''])) {
+    require __DIR__ . $_SERVER['REQUEST_URI'];
+    die;
+}
+
 // use Search\Searcher;
 //
 // $searcher = new Searcher('daen', ['da', 'en']);
@@ -9,20 +17,3 @@
 //
 // dd($results);
 ?>
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
-    <head>
-        <meta charset="utf-8">
-        <title></title>
-        <style>
-            * {
-                font-family: sans-serif;
-            }
-        </style>
-    </head>
-    <body>
-        <?php
-            require '../index-generator.php';
-        ?>
-    </body>
-</html>

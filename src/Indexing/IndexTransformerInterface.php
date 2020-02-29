@@ -2,10 +2,9 @@
 
 namespace Search\Indexing;
 
-use Search\Indexing\IndexItem;
+use Search\Indexing\Document;
 
 interface IndexTransformerInterface
 {
-    public function transform(array $document) : IndexItem;
-    public function reverse(IndexItem $indexItem) : array;
+    public function transform(array $row) : Document;
 }
