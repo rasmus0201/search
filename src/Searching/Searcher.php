@@ -69,6 +69,10 @@ class Searcher
             //     'idf' => $idf,
             // ]);
 
+            // If idf is zero then the word appears in all documents
+            // And then we should not get the word's documents...
+            // Could maybe also be a threshold
+
             foreach ($this->getAllDocumentsForTermId($term['id']) as $document) {
                 $docId = $document['document_id'];
                 $tf    = $document['hit_count'];
