@@ -2,6 +2,8 @@
 
 namespace Search\Repositories;
 
+use PDO;
+
 class InfoRepository extends AbstractRepository
 {
     public function createTableIfNotExists()
@@ -17,6 +19,27 @@ class InfoRepository extends AbstractRepository
             VALUES ('total_documents', 0)
             ON DUPLICATE KEY UPDATE `key` = `key`
         ");
+    }
+
+    public function getValueByKey($key)
+    {
+        $stmt = $this->dbh->prepare("
+            SELECT `value` FROM info
+            WHERE `key` = :key
+            LIMIT 1
+        ");
+
+        $stmt->execute([
+            ':key' => $key,
+        ]);
+
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row || !isset($row['value'])) {
+            throw new Exception("Value not found for key '{$key}'");
+        }
+
+        return $row['value'];
     }
 
     public function updateByKey($key, $value)

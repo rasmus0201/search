@@ -4,13 +4,12 @@ namespace Search\Indexing;
 
 use Exception;
 use PDO;
+use Search\Connectors\Traits\CanOpenConnections;
 use Search\Indexing\Document;
 use Search\Indexing\IndexTransformerInterface;
 use Search\Indexing\Term;
 use Search\NormalizerInterface;
 use Search\TokenizerInterface;
-use Search\Connectors\MysqlConnector;
-use Search\Connectors\SQLiteConnector;
 use Search\Repositories\DocumentIndexRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\TermIndexRepository;
@@ -18,6 +17,8 @@ use Search\Support\Config;
 
 class Indexer
 {
+    use CanOpenConnections;
+
     private $config;
     private $transformer;
     private $normalizer;
@@ -28,7 +29,8 @@ class Indexer
     private $infoRepository;
     private $termIndexRepository;
 
-    private $chunkLimit = 1000;
+    private $chunkLimit = 2500;
+    private $commitLimit = 25000;
 
     public function __construct(
         Config $config,
@@ -48,30 +50,7 @@ class Indexer
         $this->termIndexRepository = new TermIndexRepository($this->dbh);
     }
 
-    private function createDatabaseHandle(Config $config)
-    {
-        $connector = $this->createConnector($config);
-
-        return $connector->connect($config);
-    }
-
-    private function createConnector(Config $config)
-    {
-        $map = [
-            'mysql' => MySqlConnector::class,
-            'sqlite' => SQLiteConnector::class,
-        ];
-
-        $driver = $config->getDriver();
-
-        if (!isset($map[$driver])) {
-            throw new Exception("Unsupported driver [{$driver}]");
-        }
-
-        return new $map[$driver]();
-    }
-
-    public function query($query, array $params = [])
+    public function setQuery($query, array $params = [])
     {
         $db = $this->createDatabaseHandle($this->config);
         $stmt = $db->prepare($query);
@@ -116,7 +95,7 @@ class Indexer
                 $this->success("Processed {$counter} rows");
             }
 
-            if ($counter % 10000 == 0) {
+            if ($counter % $this->commitLimit == 0) {
                 $this->dbh->commit();
                 $this->infoRepository->updateByKey('total_documents', $counter);
                 $this->dbh->beginTransaction();
@@ -165,14 +144,19 @@ class Indexer
     private function saveTerm(Term $term)
     {
         try {
-            $this->termIndexRepository->createOrUpdate($term);
+            $this->termIndexRepository->create($term);
         } catch (\Exception $e) {
-            return false;
+            if ($e->getCode() != 23000) {
+                return false;
+            }
+
+            // Update instead
+            $this->termIndexRepository->incrementHits($term);
         }
 
         try {
             $term->setId($this->termIndexRepository->getTermId($term));
-            $this->documentIndexRepository->createOrUpdate($term);
+            $this->documentIndexRepository->create($term);
         } catch (\Exception $e) {
             return false;
         }

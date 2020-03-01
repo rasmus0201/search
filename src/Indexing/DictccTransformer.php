@@ -12,7 +12,7 @@ class DictccTransformer implements IndexTransformerInterface
         $item = new Document();
 
         $item->setId($row['id']);
-        $item->setDocument($row['headword']);
+        $item->setDocument($row['document']);
 
         return $item;
     }

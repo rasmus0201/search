@@ -1,7 +1,59 @@
 <?php
 
-$res = ['execution_time' => ''];
+use Search\DB;
+use Search\DefaultNormalizer;
+use Search\DefaultTokenizer;
+use Search\Indexing\Indexer;
+use Search\Searching\Searcher;
+use Search\Support\Config;
+
+$config = new Config();
+$config->setHost('localhost');
+$config->setDatabase('search');
+$config->setUsername('root');
+$config->setPassword('');
+
+$searcher = new Searcher(
+    $config,
+    new DefaultNormalizer(),
+    new DefaultTokenizer()
+);
+
+$res = [
+    'document_ids' => [],
+    'execution_time' => 'No search time',
+];
 $dicts = [];
+
+if (isset($_GET['q'])) {
+    $res = $searcher->search(trim($_GET['q'], 10));
+}
+
+if (count($res['document_ids'])) {
+    $ids = implode(', ', $res['document_ids']);
+
+    $stmt = DB::run("
+        SELECT e.*, dict.id as dict_id, dict.name as dict_name FROM entries e
+
+        INNER JOIN directions dir ON dir.id = e.direction_id
+        INNER JOIN dictionaries dict ON dict.id = dir.dictionary_id
+
+        WHERE e.id IN ($ids)
+    ");
+
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $entry) {
+        if (!isset($dicts[$entry['dict_id']])) {
+            $dicts[$entry['dict_id']] = [
+                'dict_name' => $entry['dict_name'],
+                'entries' => [$entry]
+            ];
+
+            continue;
+        }
+
+        $dicts[$entry['dict_id']]['entries'][] = $entry;
+    }
+}
 
 ?>
 <!DOCTYPE html>

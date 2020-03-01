@@ -11,7 +11,13 @@ use Search\Support\Config;
 Search\DB::run("DROP TABLE IF EXISTS info");
 Search\DB::run("DROP TABLE IF EXISTS term_index");
 Search\DB::run("DROP TABLE IF EXISTS document_index");
-sleep(1);
+
+// TODO
+// Search with positional index using TF-IDF
+// Stemming
+// Inflections
+// Stopword support
+// Fuzzy support
 
 $config = new Config();
 $config->setHost('localhost');
@@ -26,10 +32,7 @@ $indexer = new Indexer(
     new DefaultTokenizer()
 );
 
-$indexer->query("
-    SELECT e.`id`, e.`headword` FROM `entries` e
-    LIMIT :limit
-", ['limit' => 100000]);
-
-
+$indexer->setQuery("
+    SELECT e.`id`, CONCAT(e.`headword`, ' ', e.`translation`) as document FROM `entries` e
+");
 $indexer->run();

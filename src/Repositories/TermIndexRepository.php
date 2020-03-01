@@ -20,20 +20,32 @@ class TermIndexRepository extends AbstractRepository
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
     }
 
-    public function createOrUpdate(Term $term)
+    public function create(Term $term)
     {
         $stmt = $this->dbh->prepare("
             INSERT INTO term_index (`term`, `num_hits`, `num_docs`)
             VALUES (:term, :freq1, 1)
-            ON DUPLICATE KEY UPDATE
-                `num_hits` = (VALUES(`num_hits`) + :freq2),
-                `num_docs` = (VALUES(`num_docs`) + 1)
         ");
 
-        return $stmt->execute([
+        $stmt->execute([
             ':term' => $term->getTerm(),
             ':freq1' => $term->getDocumentFrequency(),
-            ':freq2' => $term->getDocumentFrequency(),
+        ]);
+    }
+
+    public function incrementHits(Term $term)
+    {
+        $stmt = $this->dbh->prepare("
+            UPDATE term_index i
+            SET i.`num_docs` = i.`num_docs` + :docs,
+                i.`num_hits` = i.`num_hits` + :hits
+            WHERE i.`term` = :term
+        ");
+
+        $stmt->execute([
+            ':docs' => 1,
+            ':hits' => $term->getDocumentFrequency(),
+            ':term' => $term->getTerm(),
         ]);
     }
 
@@ -55,5 +67,31 @@ class TermIndexRepository extends AbstractRepository
         }
 
         return $row['id'];
+    }
+
+    public function getTermsByKeywords(array $keywords)
+    {
+        if (empty($keywords)) {
+            return [];
+        }
+
+        $placeholders = ':' . implode(', :', range(0, count($keywords) - 1));
+        $orderPlaceholders = str_replace(':', ':o', $placeholders);
+
+        $params = [];
+        foreach ($keywords as $key => $value) {
+            $params[':' . $key] = $value;
+            $params[':o' . $key] = $value;
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs` FROM term_index i
+            WHERE i.`term` IN (".$placeholders.")
+            ORDER BY FIELD(i.`term`, ".$orderPlaceholders.")
+        ");
+
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
