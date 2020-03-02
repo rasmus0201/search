@@ -92,7 +92,7 @@ class Indexer
             $this->indexDocument($document);
 
             if ($counter % $this->chunkLimit == 0) {
-                $this->success("Processed {$counter} rows");
+                $this->success("Processed {$counter} documents");
             }
 
             if ($counter % $this->commitLimit == 0) {
@@ -108,7 +108,7 @@ class Indexer
 
         $this->infoRepository->updateByKey('total_documents', $counter);
 
-        $this->success("Total rows {$counter}");
+        $this->success("Total documents: {$counter}");
     }
 
     private function indexDocument($document)

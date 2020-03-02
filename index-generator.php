@@ -32,7 +32,12 @@ $indexer = new Indexer(
     new DefaultTokenizer()
 );
 
+// $indexer->setQuery("
+//     SELECT e.`id`, CONCAT(e.`headword`, ' ', e.`translation`) as document FROM `entries` e
+//     WHERE e.`direction_id` IN (1, 2)
+// ");
 $indexer->setQuery("
-    SELECT e.`id`, CONCAT(e.`headword`, ' ', e.`translation`) as document FROM `entries` e
+    SELECT e.`id`, e.`headword` as document FROM `entries` e
+    WHERE e.`direction_id` IN (1, 2)
 ");
 $indexer->run();

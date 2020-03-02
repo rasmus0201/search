@@ -26,7 +26,7 @@ $res = [
 $dicts = [];
 
 if (isset($_GET['q'])) {
-    $res = $searcher->search(trim($_GET['q'], 10));
+    $res = $searcher->search(trim($_GET['q']), 10);
 }
 
 if (count($res['document_ids'])) {

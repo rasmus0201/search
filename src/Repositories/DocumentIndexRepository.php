@@ -52,20 +52,40 @@ class DocumentIndexRepository extends AbstractRepository
         return $default;
     }
 
-    public function getTermHitsInDocumentByTermId($termId, $limit)
+    public function getUniqueIdsByTermIds(array $termIds, $limit)
     {
+        if (empty($termIds)) {
+            return [];
+        }
+
         $stmt = $this->dbh->prepare("
-            SELECT i.`document_id`, COUNT(*) as hit_count FROM document_index i
-            WHERE term_id = :termId
+            SELECT DISTINCT i.`document_id` FROM document_index i
+            WHERE i.`term_id` IN (" . implode(',', $termIds) . ")
             GROUP BY i.`document_id`
             LIMIT :limit
         ");
 
         $stmt->execute([
-            ':termId' => $termId,
             ':limit' => $limit,
         ]);
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'document_id');
+    }
+
+    public function getByIds(array $documentIds)
+    {
+        if (empty($documentIds)) {
+            return [];
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT i.`document_id`, i.`term_id`, i.`position` FROM document_index i
+            WHERE i.`document_id` IN (" . implode(',', $documentIds) . ")
+            ORDER BY i.`document_id`, i.`position`
+        ");
+
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);;
     }
 }

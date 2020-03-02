@@ -2,6 +2,7 @@
 
 namespace Search\Repositories;
 
+use Exception;
 use PDO;
 use Search\Indexing\Term;
 
@@ -69,7 +70,23 @@ class TermIndexRepository extends AbstractRepository
         return $row['id'];
     }
 
-    public function getTermsByKeywords(array $keywords)
+    public function getByIds(array $termIds)
+    {
+        if (empty($termIds)) {
+            return [];
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs` FROM term_index i
+            WHERE i.`id` IN (".implode(',', $termIds).")
+        ");
+
+        $stmt->execute();
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getByKeywords(array $keywords)
     {
         if (empty($keywords)) {
             return [];
@@ -86,7 +103,7 @@ class TermIndexRepository extends AbstractRepository
 
         $stmt = $this->dbh->prepare("
             SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs` FROM term_index i
-            WHERE i.`term` IN (".$placeholders.")
+            WHERE BINARY i.`term` IN (".$placeholders.")
             ORDER BY FIELD(i.`term`, ".$orderPlaceholders.")
         ");
 
