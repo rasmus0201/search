@@ -4,9 +4,9 @@ namespace Search\Import;
 
 use Search\Support\Config;
 
-interface FileImporterInterface
+interface DatabaseImporterInterface
 {
-    public function __construct($filePath, $directionId);
+    public function __construct(Config $config);
     public function setConnection(Config $config);
     public function import($toTableName);
 }

@@ -2,7 +2,8 @@
 
 namespace Search\Import;
 
-use Search\Support\StaticDB;
+use Search\Support\Config;
+use Search\Support\DB;
 
 abstract class AbstractFileImporter
 {
@@ -12,6 +13,7 @@ abstract class AbstractFileImporter
     protected $rows;
     protected $directionId;
     protected $handle;
+    protected $dbh;
 
     abstract protected function parse();
 
@@ -33,6 +35,11 @@ abstract class AbstractFileImporter
         }
 
         fclose($this->handle);
+    }
+
+    public function setConnection(Config $config)
+    {
+        $this->dbh = (new DB($config))->getConnection();
     }
 
     public function import($toTableName)
@@ -60,7 +67,8 @@ abstract class AbstractFileImporter
         $updateSql = $this->generateUpdateSql(array_keys($rows[0]));
 
         try {
-            $stmt = StaticDB::run($insertSql.$updateSql, $this->generateBindings($rows));
+            $stmt = $this->dbh->prepare($insertSql.$updateSql);
+            $stmt->execute($this->generateBindings($rows));
         } catch (\Exception $e) {
             $stmt = false;
         }

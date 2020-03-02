@@ -3,6 +3,7 @@
 require 'run.php';
 
 use Search\Import\Dictcc\Importer;
+use Search\Support\Config;
 
 $imports = [
     [
@@ -31,12 +32,19 @@ $imports = [
     ],
 ];
 
+$config = new Config();
+$config->setHost('localhost');
+$config->setDatabase('search');
+$config->setUsername('root');
+$config->setPassword('');
+
 foreach ($imports as $import) {
     $fileName = $import['filename'];
 
     echo 'Started importing '. $fileName . PHP_EOL;
 
     $importer = new Importer($fileName, $import['direction_id']);
+    $importer->setConnection($config);
     $importer->import('test_documents');
 
     echo 'Finished importing '. $fileName . PHP_EOL;

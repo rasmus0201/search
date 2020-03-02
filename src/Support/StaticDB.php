@@ -2,7 +2,6 @@
 
 namespace Search\Support;
 
-use PDO;
 use Search\Connectors\Traits\CanOpenConnections;
 use Search\Support\Config;
 
@@ -11,7 +10,7 @@ class StaticDB
     use CanOpenConnections;
 
     /**
-     * @var DB
+     * @var StaticDB
      */
     private static $instance = null;
 
@@ -22,7 +21,7 @@ class StaticDB
 
     private function __construct(Config $config)
     {
-        $this->dbh = $this->createDatabaseHandle($this->config);
+        $this->dbh = $this->createDatabaseHandle($config);
     }
 
     private function __clone() {}
@@ -37,7 +36,7 @@ class StaticDB
             $config->setUsername(getenv('DB_USER'));
             $config->setPassword(getenv('DB_PASS'));
 
-            self::$instance = new DB($config);
+            self::$instance = new StaticDB($config);
         }
 
         return self::$instance;
