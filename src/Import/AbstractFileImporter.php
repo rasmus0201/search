@@ -2,11 +2,14 @@
 
 namespace Search\Import;
 
+use Search\Import\Traits\CanInsertMultipleValuesMysql;
 use Search\Support\Config;
 use Search\Support\DB;
 
 abstract class AbstractFileImporter
 {
+    use CanInsertMultipleValuesMysql;
+
     const CHUNK_LIMIT = 500;
 
     protected $lines;
@@ -59,54 +62,5 @@ abstract class AbstractFileImporter
         if (count($rows) > 0) {
             $this->performInsert($toTableName, $rows);
         }
-    }
-
-    private function performInsert($tableName, $rows)
-    {
-        $insertSql = $this->generateInsertSql($tableName, $rows);
-        $updateSql = $this->generateUpdateSql(array_keys($rows[0]));
-
-        try {
-            $stmt = $this->dbh->prepare($insertSql.$updateSql);
-            $stmt->execute($this->generateBindings($rows));
-        } catch (\Exception $e) {
-            $stmt = false;
-        }
-
-        if (!$stmt) {
-            echo 'An error happened during import into database' . PHP_EOL;
-        }
-    }
-
-    private function generateBindings(array $rows)
-    {
-        return call_user_func_array('array_merge', array_map('array_values', $rows));
-    }
-
-    private function generateInsertSql($tableName, array $rows)
-    {
-        $values = [];
-        $index = 0;
-        foreach ($rows as $row) {
-            $value = [];
-
-            foreach ($row as $column) {
-                $value[] = ':'.$index++;
-            }
-
-            $values[] = '('.implode(', ', $value).')';
-        }
-
-        return 'INSERT INTO `'.$tableName.'` VALUES ' . implode(', ', $values);
-    }
-
-    private function generateUpdateSql($columns)
-    {
-        $updates = [];
-        foreach ($columns as $column) {
-            $updates[] = sprintf('`%s` = VALUES(`%s`)', $column, $column);
-        }
-
-        return ' ON DUPLICATE KEY UPDATE ' . implode(', ', $updates);
     }
 }
