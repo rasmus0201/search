@@ -1,3 +1,14 @@
+Notes:
+
+Create normalized proximity index
+    -> normalized => inflections matches for base.
+    -> k-way linear merge
+
+Maybe some kind of logic for translations, inflections, prioritize-when-lemma
+
+
+
+
 Links:
 
 https://www.dict.cc/guidelines/?l=d
