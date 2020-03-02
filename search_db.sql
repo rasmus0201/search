@@ -5,9 +5,9 @@
 # http://www.sequelpro.com/
 # https://github.com/sequelpro/sequelpro
 #
-# Host: 127.0.0.1 (MySQL 5.7.28)
+# Host: 127.0.0.1 (MySQL 5.7.24)
 # Database: search
-# Generation Time: 2020-02-28 11:39:01 +0000
+# Generation Time: 2020-03-02 20:06:18 +0000
 # ************************************************************
 
 
@@ -23,6 +23,8 @@
 # Dump of table dictionaries
 # ------------------------------------------------------------
 
+DROP TABLE IF EXISTS `dictionaries`;
+
 CREATE TABLE `dictionaries` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(255) NOT NULL DEFAULT '',
@@ -35,9 +37,10 @@ LOCK TABLES `dictionaries` WRITE;
 
 INSERT INTO `dictionaries` (`id`, `name`, `publisher`)
 VALUES
-	(1,'Dictcc DA <-> EN','Dictcc'),
-	(2,'Dictcc DA <-> DE','Dictcc'),
-	(3,'Dictcc EN <-> DE','Dictcc');
+	(1,'Dictcc DA ↔ EN','Dictcc'),
+	(2,'Dictcc DA ↔ DE','Dictcc'),
+	(3,'Dictcc EN ↔ DE','Dictcc'),
+	(4,'Apollo DA ↔ EN','Apollo');
 
 /*!40000 ALTER TABLE `dictionaries` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -45,6 +48,8 @@ UNLOCK TABLES;
 
 # Dump of table directions
 # ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `directions`;
 
 CREATE TABLE `directions` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -58,21 +63,42 @@ LOCK TABLES `directions` WRITE;
 
 INSERT INTO `directions` (`id`, `dictionary_id`, `name`)
 VALUES
-	(1,1,'DA -> EN'),
-	(2,1,'EN -> DA'),
-	(3,2,'DA -> DE'),
-	(4,2,'DE -> DA'),
-	(5,3,'EN -> DE'),
-	(6,3,'DE -> EN');
+	(1,1,'DA → EN'),
+	(2,1,'EN → DA'),
+	(3,2,'DA → DE'),
+	(4,2,'DE → DA'),
+	(5,3,'EN → DE'),
+	(6,3,'DE → EN'),
+	(7,4,'DA → EN'),
+	(8,5,'EN → DA');
 
 /*!40000 ALTER TABLE `directions` ENABLE KEYS */;
 UNLOCK TABLES;
 
 
-# Dump of table entries
+# Dump of table document_index
 # ------------------------------------------------------------
 
-CREATE TABLE `entries` (
+DROP TABLE IF EXISTS `document_index`;
+
+CREATE TABLE `document_index` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `document_id` int(11) unsigned NOT NULL,
+  `term_id` int(11) unsigned NOT NULL,
+  `position` int(11) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_document_term_position` (`document_id`,`term_id`,`position`),
+  KEY `idx_term_position` (`term_id`,`position`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table documents
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `documents`;
+
+CREATE TABLE `documents` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `direction_id` int(11) NOT NULL,
   `headword` varchar(255) NOT NULL DEFAULT '',
@@ -85,8 +111,30 @@ CREATE TABLE `entries` (
 
 
 
+# Dump of table entries
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `entries`;
+
+CREATE TABLE `entries` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `direction_id` int(11) NOT NULL,
+  `raw_entry_id` int(11) NOT NULL,
+  `lemma_id` int(11) DEFAULT NULL,
+  `lemma_ref` varchar(32) DEFAULT NULL,
+  `headword` varchar(255) NOT NULL DEFAULT '',
+  `wordclass` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_entry` (`direction_id`,`headword`,`wordclass`),
+  KEY `idx_direction_headword` (`direction_id`,`headword`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
 # Dump of table inflections
 # ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `inflections`;
 
 CREATE TABLE `inflections` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
@@ -98,58 +146,89 @@ CREATE TABLE `inflections` (
 
 
 
-# Dump of table lemmas
+# Dump of table info
 # ------------------------------------------------------------
 
-CREATE TABLE `lemmas` (
+DROP TABLE IF EXISTS `info`;
+
+CREATE TABLE `info` (
+  `key` varchar(255) NOT NULL,
+  `value` int(11) DEFAULT NULL,
+  PRIMARY KEY (`key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table raw_entries
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `raw_entries`;
+
+CREATE TABLE `raw_entries` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `entry_id` varchar(32) NOT NULL,
+  `book` varchar(255) NOT NULL,
+  `data` text NOT NULL,
+  `lemma_references` varchar(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `entry_id_book` (`entry_id`,`book`) USING BTREE,
+  KEY `book` (`book`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table raw_lemmas
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `raw_lemmas`;
+
+CREATE TABLE `raw_lemmas` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `lemma_id` varchar(32) NOT NULL,
+  `lang` varchar(3) NOT NULL,
+  `data` text NOT NULL,
+  `status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
+  `solr_status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
+  `reimporting` tinyint(1) NOT NULL DEFAULT '0',
+  `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE KEY `lemma_id_lang` (`lemma_id`,`lang`),
+  KEY `status` (`status`),
+  KEY `solr_status` (`solr_status`),
+  KEY `lang` (`lang`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
+# Dump of table term_index
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `term_index`;
+
+CREATE TABLE `term_index` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `ortography` varchar(255) NOT NULL DEFAULT '',
-  `word_class` varchar(64) NOT NULL DEFAULT '',
-  PRIMARY KEY (`id`)
+  `term` varchar(255) NOT NULL,
+  `num_hits` int(11) NOT NULL,
+  `num_docs` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_term` (`term`),
+  KEY `idx_term` (`term`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 
-# Dump of table search_index
+# Dump of table test_documents
 # ------------------------------------------------------------
 
--- CREATE TABLE `search_index` (
---   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
---   `entry_id` int(11) NOT NULL,
---   `term` varchar(255) NOT NULL DEFAULT '',
---   `position` mediumint(9) NOT NULL,
---   PRIMARY KEY (`id`),
---   KEY `idx_term` (`term`)
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+DROP TABLE IF EXISTS `test_documents`;
 
-
-CREATE TABLE IF NOT EXISTS term_index (
-    `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
-    `term` VARCHAR(255),
-    `num_hits` INT(11),
-    `num_docs` INT(11),
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `unique_term` (`term`),
-    KEY `idx_term` (`term`)
+CREATE TABLE `test_documents` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `direction_id` int(11) NOT NULL,
+  `headword` varchar(255) NOT NULL DEFAULT '',
+  `translation` varchar(255) NOT NULL DEFAULT '',
+  `wordclass` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE IF NOT EXISTS document_index (
-    `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
-    `document_id` INT(11) unsigned,
-    `term_id` INT(11) unsigned,
-    `position` INT(11) unsigned,
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `unique_document_term_position` (`document_id`, `term_id`, `position`),
-    KEY `idx_term_position` (`term_id`, `position`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-CREATE TABLE IF NOT EXISTS info (
-    `key` VARCHAR(255),
-    `value` INT(11),
-    PRIMARY KEY (`key`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-INSERT INTO info (`key`, `value`) values ('total_documents', 0);
 
 
 

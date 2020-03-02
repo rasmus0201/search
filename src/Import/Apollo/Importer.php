@@ -20,6 +20,25 @@ class Importer implements DatabaseImporterInterface
         'enda-rød' => 9,
     ];
 
+    private $wordclassMap = [
+        'adj.',
+        'adv.',
+        'artikel',
+        'infinitivmærke',
+        'konj.',
+        'lydord',
+        'pron.',
+        'proprium',
+        'præfiks',
+        'præp.',
+        'sb.',
+        'suffiks',
+        'talord',
+        'uden klasse',
+        'udråbsord',
+        'vb.',
+    ];
+
     public function __construct(Config $config)
     {
         $this->setConnection($config);
