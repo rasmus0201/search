@@ -37,7 +37,7 @@ foreach ($imports as $import) {
     echo 'Started importing '. $fileName . PHP_EOL;
 
     $importer = new Importer($fileName, $import['direction_id']);
-    $importer->import('entries');
+    $importer->import('test_documents');
 
     echo 'Finished importing '. $fileName . PHP_EOL;
 }

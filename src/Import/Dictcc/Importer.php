@@ -2,11 +2,11 @@
 
 namespace Search\Import\Dictcc;
 
-use Search\Import\AbstractImporter;
-use Search\Import\ImporterInterface;
+use Search\Import\AbstractFileImporter;
+use Search\Import\FileImporterInterface;
 use Search\Import\Dictcc\Models\Entry;
 
-class Importer extends AbstractImporter implements ImporterInterface
+class Importer extends AbstractFileImporter implements FileImporterInterface
 {
     protected function parse()
     {

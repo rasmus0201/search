@@ -2,10 +2,12 @@
 
 namespace Search\Import;
 
-use Search\DB;
+use Search\Support\StaticDB;
 
-abstract class AbstractImporter
+abstract class AbstractFileImporter
 {
+    const CHUNK_LIMIT = 500;
+
     protected $lines;
     protected $rows;
     protected $directionId;
@@ -33,22 +35,22 @@ abstract class AbstractImporter
         fclose($this->handle);
     }
 
-    public function import($tableName)
+    public function import($toTableName)
     {
         $rows = [];
         foreach ($this->parse() as $entry) {
             $rows[] = $entry;
 
-            if (count($rows) === 500) {
-                $this->performInsert($tableName, $rows);
+            if (count($rows) === self::CHUNK_LIMIT) {
+                $this->performInsert($toTableName, $rows);
 
                 $rows = [];
             }
         }
 
-        // If the last run is less than 500, there will be remaining rows.
+        // If the last run is less than chunk, there will be remaining rows.
         if (count($rows) > 0) {
-            $this->performInsert($tableName, $rows);
+            $this->performInsert($toTableName, $rows);
         }
     }
 
@@ -58,7 +60,7 @@ abstract class AbstractImporter
         $updateSql = $this->generateUpdateSql(array_keys($rows[0]));
 
         try {
-            $stmt = DB::run($insertSql.$updateSql, $this->generateBindings($rows));
+            $stmt = StaticDB::run($insertSql.$updateSql, $this->generateBindings($rows));
         } catch (\Exception $e) {
             $stmt = false;
         }
