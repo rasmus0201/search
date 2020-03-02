@@ -187,14 +187,8 @@ CREATE TABLE `raw_lemmas` (
   `lemma_id` varchar(32) NOT NULL,
   `lang` varchar(3) NOT NULL,
   `data` text NOT NULL,
-  `status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
-  `solr_status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
-  `reimporting` tinyint(1) NOT NULL DEFAULT '0',
-  `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `lemma_id_lang` (`lemma_id`,`lang`),
-  KEY `status` (`status`),
-  KEY `solr_status` (`solr_status`),
   KEY `lang` (`lang`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
