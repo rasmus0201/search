@@ -5,9 +5,9 @@
 # http://www.sequelpro.com/
 # https://github.com/sequelpro/sequelpro
 #
-# Host: 127.0.0.1 (MySQL 5.7.24)
+# Host: 127.0.0.1 (MySQL 5.7.28)
 # Database: search
-# Generation Time: 2020-03-02 20:06:18 +0000
+# Generation Time: 2020-03-03 12:38:48 +0000
 # ************************************************************
 
 
@@ -138,9 +138,10 @@ DROP TABLE IF EXISTS `inflections`;
 
 CREATE TABLE `inflections` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `raw_lemma_id` int(11) NOT NULL,
   `lemma_id` int(11) DEFAULT NULL,
+  `word` varchar(255) NOT NULL COMMENT 'The inflected word',
   `form` varchar(255) NOT NULL DEFAULT '' COMMENT 'Which inflected form is it',
-  `word` varchar(255) NOT NULL DEFAULT '' COMMENT 'The inflected word',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -159,6 +160,21 @@ CREATE TABLE `info` (
 
 
 
+# Dump of table lemmas
+# ------------------------------------------------------------
+
+DROP TABLE IF EXISTS `lemmas`;
+
+CREATE TABLE `lemmas` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `raw_lemma_id` int(11) NOT NULL,
+  `word` varchar(255) NOT NULL DEFAULT '',
+  `wordclass` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+
 # Dump of table raw_entries
 # ------------------------------------------------------------
 
@@ -170,9 +186,15 @@ CREATE TABLE `raw_entries` (
   `book` varchar(255) NOT NULL,
   `data` text NOT NULL,
   `lemma_references` varchar(1024) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+  `status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
+  `solr_status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
+  `reimporting` tinyint(1) NOT NULL DEFAULT '0',
+  `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `entry_id_book` (`entry_id`,`book`) USING BTREE,
-  KEY `book` (`book`)
+  KEY `status` (`status`),
+  KEY `book` (`book`),
+  KEY `solr_status` (`solr_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -187,8 +209,14 @@ CREATE TABLE `raw_lemmas` (
   `lemma_id` varchar(32) NOT NULL,
   `lang` varchar(3) NOT NULL,
   `data` text NOT NULL,
+  `status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
+  `solr_status` enum('new','updated','rendered','pending_delete','deleted') NOT NULL DEFAULT 'new',
+  `reimporting` tinyint(1) NOT NULL DEFAULT '0',
+  `updated` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE KEY `lemma_id_lang` (`lemma_id`,`lang`),
+  KEY `status` (`status`),
+  KEY `solr_status` (`solr_status`),
   KEY `lang` (`lang`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

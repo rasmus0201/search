@@ -3,16 +3,17 @@
 namespace Search\Import\Apollo;
 
 use PDO;
+use Search\Import\Apollo\XmlHelper;
 use Search\Import\Traits\CanInsertMultipleValuesMysql;
 use Search\Import\DatabaseImporterInterface;
 use Search\Support\Config;
 use Search\Support\DB;
 
-class Importer implements DatabaseImporterInterface
+class EntryImporter implements DatabaseImporterInterface
 {
     use CanInsertMultipleValuesMysql;
 
-    const CHUNK_LIMIT = 500;
+    const CHUNK_LIMIT = 1000;
 
     private $dbh;
     private $bookIdToDirectionIdMap = [
@@ -106,16 +107,15 @@ class Importer implements DatabaseImporterInterface
     private function parse($book)
     {
         $count = $this->count($book);
-        $limit = 500;
         $offset = 0;
 
-        while ($rows = $this->chunk($book, $limit, $offset)) {
+        while ($rows = $this->chunk($book, self::CHUNK_LIMIT, $offset)) {
             foreach ($rows as $row) {
                 $data = $row['data'];
 
-                $idAttributes = $this->extractAttributes($data, 'id-lemma');
-                $prioAttributes = $this->extractAttributes($data, 'prioritize-when-lemma');
-                $headword = $this->extractInnerContent($data, 'headword');
+                $idAttributes = XmlHelper::extractAttributes($data, 'id-lemma');
+                $prioAttributes = XmlHelper::extractAttributes($data, 'prioritize-when-lemma');
+                $headword = XmlHelper::extractInnerContent($data, 'headword');
 
                 $lemmaRef = null;
                 $wordclass = null;
@@ -140,46 +140,12 @@ class Importer implements DatabaseImporterInterface
                 yield $row['id'] => $entry;
             }
 
-            $offset += $limit;
+            $offset += self::CHUNK_LIMIT;
         }
     }
 
     private function isPhrase($string)
     {
         return strpos('<prioritize-when-lemma') !== false;
-    }
-
-    private function extractInnerContent($string, $tag)
-    {
-        $pattern = '/<'.$tag.'(?:.*?)>(.*?)<\/'.$tag.'>/';
-        preg_match($pattern, $string, $rawContent);
-
-        if (!isset($rawContent[1])) {
-            return '';
-        }
-
-        return $rawContent[1];
-    }
-
-    private function extractAttributes($string, $tag)
-    {
-        $pattern = '/<'.$tag.' (.*?)\/>/';
-        preg_match($pattern, $string, $rawIdAttributes);
-
-        if (!isset($rawIdAttributes[1])) {
-            return;
-        }
-
-        $unformattedAttr = preg_split('/("[^"]*")|\h+/', $rawIdAttributes[1], -1, PREG_SPLIT_NO_EMPTY|PREG_SPLIT_DELIM_CAPTURE);
-
-        $attributes = [];
-        for ($i = 0; $i < count($unformattedAttr); $i += 2) {
-            $attributeName = mb_substr($unformattedAttr[$i], 0, -1);
-            $attributeValue = mb_substr($unformattedAttr[$i + 1], 1, -1);
-
-            $attributes[$attributeName] = $attributeValue;
-        }
-
-        return $attributes;
     }
 }

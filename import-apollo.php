@@ -2,7 +2,8 @@
 
 require 'run.php';
 
-use Search\Import\Apollo\Importer;
+use Search\Import\Apollo\EntryImporter;
+use Search\Import\Apollo\LemmaImporter;
 use Search\Support\Config;
 
 $config = new Config();
@@ -12,9 +13,18 @@ $config->setUsername('root');
 $config->setPassword('');
 
 
-echo 'Started importing Apollo datset' . PHP_EOL;
+echo 'Started importing lemmas from Apollo dataset' . PHP_EOL;
 
-$importer = new Importer($config);
+$importer = new LemmaImporter($config);
+$importer->setInflectionTable('inflections');
+$importer->import('lemmas');
+
+echo 'Finished importing lemmas from Apollo dataset' . PHP_EOL;
+
+
+echo 'Started entries importing Apollo dataset' . PHP_EOL;
+
+$importer = new EntryImporter($config);
 $importer->import('entries');
 
-echo 'Finished importing Apollo dataset' . PHP_EOL;
+echo 'Finished entries importing Apollo dataset' . PHP_EOL;
