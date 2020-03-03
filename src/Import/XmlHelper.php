@@ -1,13 +1,12 @@
 <?php
 
-namespace Search\Import\Apollo;
+namespace Search\Import;
 
 class XmlHelper
 {
     public static function hasTag($string, $tag)
     {
         $pattern = '/(<'.$tag.'(?:.*?)\/>)|(<'.$tag.'(?:.*?)>(?:.*?)<'.$tag.'\/>)/';
-        // $pattern = '/<'.$tag.'(?:.*?)\/>/';
         preg_match($pattern, $string, $tagMatches);
 
         return count($tagMatches) > 0;

@@ -3,7 +3,7 @@
 namespace Search\Import\Apollo;
 
 use PDO;
-use Search\Import\Apollo\XmlHelper;
+use Search\Import\XmlHelper;
 use Search\Import\Traits\CanInsertMultipleValuesMysql;
 use Search\Import\DatabaseImporterInterface;
 use Search\Support\Config;
@@ -13,7 +13,7 @@ class EntryImporter implements DatabaseImporterInterface
 {
     use CanInsertMultipleValuesMysql;
 
-    const CHUNK_LIMIT = 1000;
+    const CHUNK_LIMIT = 2000;
 
     private $dbh;
     private $bookIdToDirectionIdMap = [
@@ -93,22 +93,7 @@ class EntryImporter implements DatabaseImporterInterface
             foreach ($rows as $row) {
                 $data = $row['data'];
 
-                $idAttributes = XmlHelper::extractAttributes($data, 'id-lemma');
-                $prioAttributes = XmlHelper::extractAttributes($data, 'prioritize-when-lemma');
                 $headword = XmlHelper::extractInnerContent($data, 'headword');
-
-                $lemmaRef = null;
-                $wordclass = null;
-
-                if ($idAttributes) {
-                    $lemmaRef = $idAttributes['lemmaid-ref'] ?? null;
-                    $wordclass = $idAttributes['lemma-pos'] ?? null;
-                }
-
-                if ($prioAttributes) {
-                    $lemmaRef = $prioAttributes['lemmaid-ref'] ?? null;
-                    $wordclass = $idAttributes['lemma-pos'] ?? null;
-                }
 
                 $entry = [
                     'direction_id' => $directionId,
@@ -122,10 +107,5 @@ class EntryImporter implements DatabaseImporterInterface
 
             $offset += self::CHUNK_LIMIT;
         }
-    }
-
-    private function isPhrase($string)
-    {
-        return strpos('<prioritize-when-lemma') !== false;
     }
 }
