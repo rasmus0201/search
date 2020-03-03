@@ -221,7 +221,8 @@ CREATE TABLE `test_documents` (
   `direction_id` int(11) NOT NULL,
   `headword` varchar(255) NOT NULL DEFAULT '',
   `translation` varchar(255) NOT NULL DEFAULT '',
-  `wordclass` varchar(255) DEFAULT NULL
+  `wordclass` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
