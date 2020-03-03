@@ -8,7 +8,7 @@ use Search\Support\DB;
 
 class InflectionLinker
 {
-    const CHUNK_LIMIT = 1000;
+    const CHUNK_LIMIT = 10000;
 
     private $dbh;
 
@@ -24,12 +24,14 @@ class InflectionLinker
 
     public function link()
     {
-        if (!$count = $this->count()) {
+        if (!$this->count()) {
             return;
         }
 
         $offset = 0;
-        while ($status = $this->chunk(self::CHUNK_LIMIT, $offset)) {
+        while ($this->count() > 0) {
+            $this->chunk(self::CHUNK_LIMIT, $offset);
+
             $offset += self::CHUNK_LIMIT;
         }
     }
@@ -47,16 +49,6 @@ class InflectionLinker
 
     private function chunk($limit, $offset)
     {
-        // $stmt = $this->dbh->prepare("
-        //     UPDATE inflections i
-        //     JOIN lemmas l
-        //         ON l.raw_lemma_id = i.raw_lemma_id
-        //     SET i.lemma_id = l.id
-        //     WHERE i.lemma_id IS NULL
-        //
-        //     LIMIT :offset, :limit
-        // ");
-
         $stmt = $this->dbh->prepare("
             UPDATE `inflections` i
 
@@ -81,7 +73,5 @@ class InflectionLinker
         ]);
 
         $stmt->execute();
-
-        return $stmt->rowCount();
     }
 }
