@@ -21,25 +21,6 @@ class EntryImporter implements DatabaseImporterInterface
         'enda-rød' => 9,
     ];
 
-    private $wordclassMap = [
-        'adj.',
-        'adv.',
-        'artikel',
-        'infinitivmærke',
-        'konj.',
-        'lydord',
-        'pron.',
-        'proprium',
-        'præfiks',
-        'præp.',
-        'sb.',
-        'suffiks',
-        'talord',
-        'uden klasse',
-        'udråbsord',
-        'vb.',
-    ];
-
     public function __construct(Config $config)
     {
         $this->setConnection($config);
@@ -55,8 +36,7 @@ class EntryImporter implements DatabaseImporterInterface
         foreach ($this->bookIdToDirectionIdMap as $bookId => $directionId) {
             $rows = [];
 
-            foreach ($this->parse($bookId) as $entry) {
-                $entry['direction_id'] = $directionId;
+            foreach ($this->parse($bookId, $directionId) as $entry) {
                 $rows[] = $entry;
 
                 if (count($rows) === self::CHUNK_LIMIT) {
@@ -104,7 +84,7 @@ class EntryImporter implements DatabaseImporterInterface
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    private function parse($book)
+    private function parse($book, $directionId)
     {
         $count = $this->count($book);
         $offset = 0;
@@ -131,10 +111,10 @@ class EntryImporter implements DatabaseImporterInterface
                 }
 
                 $entry = [
+                    'direction_id' => $directionId,
                     'raw_entry_id' => $row['id'],
+                    'lemma_id' => null,
                     'headword' => $headword,
-                    'wordclass' => $wordclass,
-                    'lemma_ref' => $lemmaRef,
                 ];
 
                 yield $row['id'] => $entry;

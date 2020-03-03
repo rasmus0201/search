@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 5.7.28)
 # Database: search
-# Generation Time: 2020-03-03 12:38:48 +0000
+# Generation Time: 2020-03-03 13:15:18 +0000
 # ************************************************************
 
 
@@ -123,10 +123,9 @@ CREATE TABLE `entries` (
   `lemma_id` int(11) DEFAULT NULL,
   `lemma_ref` varchar(32) DEFAULT NULL,
   `headword` varchar(255) NOT NULL DEFAULT '',
-  `wordclass` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_entry` (`direction_id`,`headword`,`wordclass`),
-  KEY `idx_direction_headword` (`direction_id`,`headword`)
+  KEY `unique_entry` (`direction_id`,`lemma_id`,`headword`),
+  KEY `idx_entry` (`direction_id`,`headword`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -142,7 +141,10 @@ CREATE TABLE `inflections` (
   `lemma_id` int(11) DEFAULT NULL,
   `word` varchar(255) NOT NULL COMMENT 'The inflected word',
   `form` varchar(255) NOT NULL DEFAULT '' COMMENT 'Which inflected form is it',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_inflection` (`raw_lemma_id`,`form`),
+  KEY `idx_lemma_id` (`lemma_id`),
+  KEY `idx_raw_lemma_id` (`raw_lemma_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
@@ -168,9 +170,14 @@ DROP TABLE IF EXISTS `lemmas`;
 CREATE TABLE `lemmas` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `raw_lemma_id` int(11) NOT NULL,
+  `lemma_ref` varchar(32) NOT NULL DEFAULT '',
   `word` varchar(255) NOT NULL DEFAULT '',
   `wordclass` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_raw_lemma_id` (`raw_lemma_id`),
+  KEY `unique_lemma_ref` (`lemma_ref`),
+  KEY `idx_raw_lemma_id` (`raw_lemma_id`),
+  KEY `idx_lemma_ref` (`lemma_ref`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 

@@ -13,14 +13,16 @@ $config->setUsername('root');
 $config->setPassword('');
 
 
-echo 'Started importing lemmas from Apollo dataset' . PHP_EOL;
+// echo 'Started importing lemmas from Apollo dataset' . PHP_EOL;
+//
+// $importer = new LemmaImporter($config);
+// $importer->setInflectionTable('inflections');
+// $importer->import('lemmas');
+//
+// echo 'Finished importing lemmas from Apollo dataset' . PHP_EOL;
 
-$importer = new LemmaImporter($config);
-$importer->setInflectionTable('inflections');
-$importer->import('lemmas');
 
-echo 'Finished importing lemmas from Apollo dataset' . PHP_EOL;
-
+// TODO Set entries lemma_id to the correct one.
 
 echo 'Started entries importing Apollo dataset' . PHP_EOL;
 
