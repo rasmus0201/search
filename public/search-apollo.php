@@ -21,7 +21,16 @@ $searcher = new Searcher(
 
 $res = [
     'document_ids' => [],
-    'execution_time' => 'No search time',
+    'stats' => [
+        'raw' => [
+            'execution_time' => 0,
+            'memory_usage' => 0,
+        ],
+        'formatted' => [
+            'execution_time' => 'No search time',
+            'memory_usage' => '',
+        ],
+    ]
 ];
 $dicts = [];
 
@@ -33,15 +42,18 @@ if (count($res['document_ids'])) {
     $ids = implode(', ', $res['document_ids']);
 
     $stmt = StaticDB::run("
-        SELECT e.*, dict.id as dict_id, dict.name as dict_name FROM entries e
+        SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name FROM entries e
 
         INNER JOIN directions dir ON dir.id = e.direction_id
         INNER JOIN dictionaries dict ON dict.id = dir.dictionary_id
+        INNER JOIN raw_entries re ON e.raw_entry_id = re.id
 
-        WHERE e.id IN ($ids)
+        WHERE e.`id` IN ($ids)
+        ORDER BY FIELD(e.`id`, $ids)
+        LIMIT 2
     ");
 
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $entry) {
+    while ($entry = $stmt->fetch(PDO::FETCH_ASSOC)) {
         if (!isset($dicts[$entry['dict_id']])) {
             $dicts[$entry['dict_id']] = [
                 'dict_name' => $entry['dict_name'],
@@ -61,6 +73,22 @@ if (count($res['document_ids'])) {
     <head>
         <meta charset="utf-8">
         <title>Search</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/vs.min.css">
+        <style media="screen">
+            .result h3 {
+                margin-bottom: 0;
+            }
+
+            .result {
+                margin-bottom: 10px;
+                padding: 8px;
+                background: #fafafa;
+            }
+
+            .result .xml {
+                background: #fafafa;
+            }
+        </style>
     </head>
     <body>
         <form  method="get">
@@ -68,7 +96,10 @@ if (count($res['document_ids'])) {
             <input type="button" name="submit" value="Søg...">
         </form>
         <p>
-            Search took: <?php echo $res['execution_time']; ?>
+            Search took: <?php echo $res['stats']['formatted']['execution_time']; ?>
+            <br>
+            <br>
+            <span>Memory usage: <?php echo $res['stats']['formatted']['memory_usage']; ?></span>
         </p>
         <?php if (empty($dicts)): ?>
             <p>No results.</p>
@@ -77,12 +108,31 @@ if (count($res['document_ids'])) {
             <h2><?php echo $dict['dict_name']; ?></h2>
 
             <?php foreach ($dict['entries'] as $entry): ?>
-                <h3 style="margin-bottom: 0;">
-                    <?php echo $entry['headword']; ?>
-                </h3>
-                <small>EntryId: <?php echo $entry['id']; ?></small>
-                <br>
+                <div class="result">
+                    <h3><?php echo $entry['headword']; ?></h3>
+                    <small>EntryId: <?php echo $entry['id']; ?></small>
+                    <?php
+                        $dom = new DOMDocument('1.0');
+                        $dom->preserveWhiteSpace = false;
+                        $dom->formatOutput = true;
+                        $dom->loadXML($entry['data']);
+                        $formatxml = new SimpleXMLElement($dom->saveXML());
+
+                        $xml = $formatxml->saveXML();
+                    ?>
+                    <pre class="xml"><?php echo htmlentities($xml); ?></pre>
+                </div>
             <?php endforeach; ?>
         <?php endforeach; ?>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
+        <script>
+            (function() {
+                var highlights = document.querySelectorAll('.xml');
+
+                for (const hightlight of highlights) {
+                    hljs.highlightBlock(hightlight);
+                }
+            })();
+        </script>
     </body>
 </html>

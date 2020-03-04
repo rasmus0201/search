@@ -34,24 +34,6 @@ class DocumentIndexRepository extends AbstractRepository
         ]);
     }
 
-    public function getDocumentHitsByTermId($termId, $default = 0)
-    {
-        $stmt = $this->dbh->prepare("
-            SELECT `num_docs` FROM document_index
-            WHERE `term_id` = :termId
-        ");
-
-        $stmt->execute([
-            ':termId' => $termId,
-        ]);
-
-        if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            return $row['num_docs'];
-        }
-
-        return $default;
-    }
-
     public function getUniqueIdsByTermIds(array $termIds, $limit)
     {
         if (empty($termIds)) {

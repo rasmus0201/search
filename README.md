@@ -1,16 +1,8 @@
-Notes:
-
-Create normalized proximity index
-    -> normalized => inflections matches for base.
-    -> k-way linear merge
-
-Maybe some kind of logic for translations, inflections, prioritize-when-lemma
-
-
-
-
 Links:
 
+https://github.com/yooper/php-text-analysis
+https://github.com/web64/php-nlp-client
+https://github.com/wamania/php-stemmer
 https://www.dict.cc/guidelines/?l=d
 https://daen.dict.cc/guidelines/
 https://www.geeksforgeeks.org/data-structure-dictionary-spell-checker/

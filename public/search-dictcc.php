@@ -38,7 +38,8 @@ if (count($res['document_ids'])) {
         INNER JOIN directions dir ON dir.id = d.direction_id
         INNER JOIN dictionaries dict ON dict.id = dir.dictionary_id
 
-        WHERE d.id IN ($ids)
+        WHERE d.`id` IN ($ids)
+        ORDER BY FIELD(d.`id`, $ids)
     ");
 
     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $entry) {

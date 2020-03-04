@@ -38,6 +38,8 @@ $indexer = new Indexer(
 //     WHERE d.`direction_id` IN (1, 2)
 // ");
 
+
+// "klappe hesten" document.id: 34195, term.id: 69049
 $indexer->setQuery("
     SELECT e.`id`, e.`headword` as document FROM `entries` e
     WHERE e.`direction_id` = 8

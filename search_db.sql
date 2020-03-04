@@ -70,7 +70,7 @@ VALUES
 	(5,3,'EN → DE'),
 	(6,3,'DE → EN'),
 	(7,4,'DA → EN'),
-	(8,5,'EN → DA');
+	(8,4,'EN → DA');
 
 /*!40000 ALTER TABLE `directions` ENABLE KEYS */;
 UNLOCK TABLES;
