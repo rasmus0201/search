@@ -1,6 +1,6 @@
 <?php
 
-use Search\DB;
+use Search\Support\StaticDB;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
 use Search\Indexing\Indexer;
@@ -32,7 +32,7 @@ if (isset($_GET['q'])) {
 if (count($res['document_ids'])) {
     $ids = implode(', ', $res['document_ids']);
 
-    $stmt = DB::run("
+    $stmt = StaticDB::run("
         SELECT e.*, dict.id as dict_id, dict.name as dict_name FROM entries e
 
         INNER JOIN directions dir ON dir.id = e.direction_id

@@ -7,10 +7,11 @@ use Search\DefaultTokenizer;
 use Search\Indexing\DictccTransformer;
 use Search\Indexing\Indexer;
 use Search\Support\Config;
+use Search\Support\StaticDB;
 
-Search\DB::run("DROP TABLE IF EXISTS info");
-Search\DB::run("DROP TABLE IF EXISTS term_index");
-Search\DB::run("DROP TABLE IF EXISTS document_index");
+StaticDB::run("DROP TABLE IF EXISTS info");
+StaticDB::run("DROP TABLE IF EXISTS term_index");
+StaticDB::run("DROP TABLE IF EXISTS document_index");
 
 // TODO
 // Search with positional index using TF-IDF
