@@ -95,9 +95,17 @@ class EntryImporter implements DatabaseImporterInterface
 
                 $headword = XmlHelper::extractInnerContent($data, 'headword');
 
+                $attributes = [];
+                if (XmlHelper::hasTag($data, 'prioritize-when-lemma')) {
+                    $attributes = XmlHelper::extractAttributes($data, 'prioritize-when-lemma');
+                } else if (XmlHelper::hasTag($data, 'id-lemma')) {
+                    $attributes = XmlHelper::extractAttributes($data, 'id-lemma');
+                }
+
                 $entry = [
                     'direction_id' => $directionId,
                     'raw_entry_id' => $row['id'],
+                    'lemma_ref' => $attributes['lemmaid-ref'] ?? null,
                     'lemma_id' => null,
                     'headword' => $headword,
                 ];

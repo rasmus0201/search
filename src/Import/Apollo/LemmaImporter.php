@@ -123,7 +123,7 @@ class LemmaImporter implements DatabaseImporterInterface
     private function chunk($language, $limit, $offset)
     {
         $stmt = $this->dbh->prepare("
-            SELECT l.id, l.data FROM raw_lemmas l
+            SELECT l.id, l.lemma_id as lemma_ref, l.data FROM raw_lemmas l
             WHERE l.lang = :language
             LIMIT :offset, :limit
         ");
@@ -156,6 +156,7 @@ class LemmaImporter implements DatabaseImporterInterface
 
                 $lemma = [
                     'raw_lemma_id' => $row['id'],
+                    'lemma_ref' => $row['lemma_ref'],
                     'word' => $word,
                     'wordclass' => $wordclass,
                     'inflections' => [],

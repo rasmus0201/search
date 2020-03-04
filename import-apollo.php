@@ -3,6 +3,7 @@
 require 'run.php';
 
 use Search\Import\Apollo\EntryImporter;
+use Search\Import\Apollo\EntryLinker;
 use Search\Import\Apollo\InflectionLinker;
 use Search\Import\Apollo\LemmaImporter;
 use Search\Support\Config;
@@ -13,6 +14,8 @@ $config->setDatabase('search');
 $config->setUsername('root');
 $config->setPassword('');
 
+$startTime = date('Y-m-d H:i:s');
+echo 'Started: ' . $startTime . PHP_EOL;
 
 echo 'Started importing lemmas from Apollo dataset' . PHP_EOL;
 $importer = new LemmaImporter($config);
@@ -30,4 +33,13 @@ $importer = new EntryImporter($config);
 $importer->import('entries');
 echo 'Finished entries importing Apollo dataset' . PHP_EOL;
 
-// TODO Set entries lemma_id to the correct one.
+echo 'Started linking entries to lemmas from Apollo dataset' . PHP_EOL;
+$importer = new EntryLinker($config);
+$importer->link();
+echo 'Finished linking entries to lemmas from Apollo dataset' . PHP_EOL;
+
+$endTime = date('Y-m-d H:i:s');
+echo 'Finished: ' . $endTime . PHP_EOL;
+
+$diff = abs(strtotime($endTime) - strtotime($startTime));
+echo 'Script took ' . round(($diff / 60), 2) . ' minutes' . PHP_EOL;
