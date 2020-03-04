@@ -50,7 +50,6 @@ if (count($res['document_ids'])) {
 
         WHERE e.`id` IN ($ids)
         ORDER BY FIELD(e.`id`, $ids)
-        LIMIT 2
     ");
 
     while ($entry = $stmt->fetch(PDO::FETCH_ASSOC)) {
