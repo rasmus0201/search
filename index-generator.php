@@ -33,8 +33,14 @@ $indexer = new Indexer(
     new DefaultTokenizer()
 );
 
+// $indexer->setQuery("
+//     SELECT d.`id`, d.`headword` as document FROM `documents` d
+//     WHERE d.`direction_id` IN (1, 2)
+// ");
+
 $indexer->setQuery("
-    SELECT d.`id`, d.`headword` as document FROM `documents` d
-    WHERE d.`direction_id` IN (1, 2)
+    SELECT e.`id`, e.`headword` as document FROM `entries` e
+    WHERE e.`direction_id` = 8
 ");
+
 $indexer->run();

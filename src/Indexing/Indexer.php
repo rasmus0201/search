@@ -98,8 +98,9 @@ class Indexer
             if ($counter % $this->commitLimit == 0) {
                 $this->dbh->commit();
                 $this->infoRepository->updateByKey('total_documents', $counter);
-                $this->dbh->beginTransaction();
                 $this->success('Commited');
+
+                $this->dbh->beginTransaction();
             }
         }
 
