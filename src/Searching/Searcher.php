@@ -59,6 +59,7 @@ class Searcher
 
         $scores = [];
         $totalDocuments = $this->infoRepository->getValueByKey('total_documents');
+        $averageDocumentLength = 5;
 
         $searchTerms = $this->termIndexRepository->getByKeywords(array_values(array_filter(array_unique($keywords))));
         $searchTerms = array_slice($searchTerms, 0, self::SEARCH_MAX_TOKENS);
@@ -80,70 +81,108 @@ class Searcher
         $documents = $this->constructDocuments($documents);
 
         $foundExact = false;
+        $bm25 = [];
+        foreach ($documents as $documentId => $documentTerms) {
+            $documentLength = count($documentTerms);
 
-        foreach ($documents as $documentId => $document) {
-            $documentLength = count($document);
-
+            $bm25[$documentId] = 0;
             $termFrequencies = [];
-            $headwords = [];
-            foreach ($document as $documentTerm) {
-                if (!isset($termFrequencies[$documentTerm['term_id']])) {
-                    $termFrequencies[$documentTerm['term_id']] = 0;
+            foreach ($searchTerms as $queryTerm) {
+                if (!isset($termFrequencies[$queryTerm['id']])) {
+                    $termFrequencies[$queryTerm['id']] = 0;
                 }
 
-                $termFrequencies[$documentTerm['term_id']]++;
-
-                $headwords[] = $terms[$termsById[$documentTerm['term_id']]]['term'];
+                $termFrequencies[$queryTerm['id']]++;
             }
 
-            $documentText = implode(' ', $headwords);
+            foreach ($searchTerms as $queryTerm) {
+                // docCount -> is the total number of documents
+                // f(q_i) -> is the number of documents which contain the ith query term
+                // num = docCount - f(q_i) + 0.5
+                // denom = f(q_i) + 0.5
+                // idf = ln( 1 + (num / denom))
 
-            // Check for exact match
-            if (in_array($documentText, [$searchPhrase, implode(' ', $keywords)])) {
-                $scores = [];
-                $scores[$documentId] = [];
-                $foundExact = true;
+                // b -> 0.75 (elasticsearch)
+                // k1 -> 1.2 (elasticsearch)
+                // f(q_i, D) -> How many times does the ith query term occur in document D
+                // tf = (f(q_i, D) * (k1 + 1)) / (f(q_i, D) + k1 * (1 - b + b * (docNumTerms / avgDocNumTerms)))
 
-                break;
+                $docCount = $totalDocuments;
+                $freqInDocs = $queryTerm['num_docs'];
+                $numerator = $docCount - $freqInDocs + 0.75;
+                $denominator = $freqInDocs + 0.75;
+                $idf = log(1 + ($numerator / $denominator));
+                dump($queryTerm, $idf);
+
+                $avgDocNumTerms = $averageDocumentLength;
+                $docNumTerms = $documentLength;
+                $freqInCurrentDoc = $termFrequencies[$queryTerm['id']];
+                $b = 0.5;
+                $k1 = 1.2;
+                $tf = ($freqInCurrentDoc * ($k1 + 1)) / ($freqInCurrentDoc + $k1 * (1 - $b + $b * ($docNumTerms / $avgDocNumTerms)));
+
+                $bm25[$documentId] += ($idf * $tf);
             }
 
-            foreach ($document as $key => $documentTerm) {
-                $termId = $documentTerm['term_id'];
-
-                $termPosition = $documentTerm['position'];
-                $term = $terms[$termsById[$termId]];
-
-                // TODO Which one is most correct?
-                // $tf = $termFrequencies[$termId] / $documentLength;
-                // $tf = $term['num_hits']; // Stopwords is weighted really high here
-                $tf = $termFrequencies[$termId];
-
-                $df = $term['num_docs'];
-                $idf = log($totalDocuments / max(1, $df));
-
-                $score = $tf * $idf;
-
-                // If a word matches the exact search but is not the same position
-                $proximity = $this->proximityScore($term['term'], $termPosition, $keywords);
-                $proximityScore = min(abs($proximity), 6);
-
-                $score -= $proximityScore;
-
-                if ($proximity === 0) {
-                    $score *= 1.3;
-                }
-
-                if (!isset($searchTermsIdsById[$termId])) {
-                    $score *= 0.8;
-                }
-
-                // TODO Maybe substract score if the document text's words have many that doesn't exist in the search phrase?
-
-                $scores[$documentId] = isset($scores[$documentId]) ? ($scores[$documentId] + $score) : $score;
-            }
+            // $termFrequencies = [];
+            // $headwords = [];
+            // foreach ($documentTerms as $documentTerm) {
+            //     if (!isset($termFrequencies[$documentTerm['term_id']])) {
+            //         $termFrequencies[$documentTerm['term_id']] = 0;
+            //     }
+            //
+            //     $termFrequencies[$documentTerm['term_id']]++;
+            //
+            //     $headwords[] = $terms[$termsById[$documentTerm['term_id']]]['term'];
+            // }
+            //
+            // $documentText = implode(' ', $headwords);
+            //
+            // // Check for exact match
+            // if (in_array($documentText, [$searchPhrase, implode(' ', $keywords)])) {
+            //     $scores = [];
+            //     $scores[$documentId] = [];
+            //     $foundExact = true;
+            //
+            //     break;
+            // }
+            //
+            // foreach ($documentTerms as $key => $documentTerm) {
+            //     $termId = $documentTerm['term_id'];
+            //     $termPosition = $documentTerm['position'];
+            //     $term = $terms[$termsById[$termId]];
+            //
+            //     // TODO Which one is most correct?
+            //     // $tf = $termFrequencies[$termId] / $documentLength;
+            //     // $tf = $term['num_hits']; // Stopwords is weighted really high here
+            //     $tf = $termFrequencies[$termId];
+            //
+            //     $df = $term['num_docs'];
+            //     $idf = log($totalDocuments / max(1, $df));
+            //
+            //     $score = $tf * $idf;
+            //
+            //     // If a word matches the exact search but is not the same position
+            //     $proximity = $this->proximityScore($term['term'], $termPosition, $keywords);
+            //     $proximityScore = min(abs($proximity), 6);
+            //
+            //     $score -= $proximityScore;
+            //
+            //     if ($proximity === 0) {
+            //         $score *= 1.3;
+            //     }
+            //
+            //     if (!isset($searchTermsIdsById[$termId])) {
+            //         $score *= 0.8;
+            //     }
+            //
+            //     // TODO Maybe substract score if the document text's words have many that doesn't exist in the search phrase?
+            //
+            //     $scores[$documentId] = isset($scores[$documentId]) ? ($scores[$documentId] + $score) : $score;
+            // }
         }
 
-        $best = $this->getBestMatches($scores, $numOfResults);
+        $best = $this->getBestMatches($bm25, $numOfResults);
 
         return [
             'document_ids' => array_keys($best),
