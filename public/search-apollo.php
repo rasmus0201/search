@@ -111,7 +111,7 @@ if (count($res['document_ids'])) {
                     <h3><?php echo $entry['headword']; ?></h3>
                     <small>EntryId: <?php echo $entry['id']; ?></small>
                     <?php
-                        $dom = new DOMDocument('1.0');
+                        $dom = new DOMDocument('1.0', 'utf-8');
                         $dom->preserveWhiteSpace = false;
                         $dom->formatOutput = true;
                         $dom->loadXML($entry['data']);
@@ -119,16 +119,19 @@ if (count($res['document_ids'])) {
 
                         $xml = $formatxml->saveXML();
                     ?>
-                    <pre class="xml"><?php echo htmlentities($xml); ?></pre>
+                    <pre class="xml"><?php echo $xml; ?></pre>
                 </div>
             <?php endforeach; ?>
         <?php endforeach; ?>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
         <script>
             (function() {
                 var highlights = document.querySelectorAll('.xml');
 
                 for (const hightlight of highlights) {
+                    esc = _.escape(hightlight.innerHTML);
+                    hightlight.innerHTML = esc;
                     hljs.highlightBlock(hightlight);
                 }
             })();
