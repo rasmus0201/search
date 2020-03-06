@@ -19,7 +19,7 @@ echo 'Started: ' . $startTime . PHP_EOL;
 
 echo 'Started importing lemmas from Apollo dataset' . PHP_EOL;
 $importer = new LemmaImporter($config);
-$importer->setInflectionTable('inflections');
+$importer->setInflectionTable('lemma_inflections');
 $importer->import('lemmas');
 echo 'Finished importing lemmas from Apollo dataset' . PHP_EOL;
 
