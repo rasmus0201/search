@@ -148,10 +148,6 @@ class Indexer
             }
 
             $this->saveInflections($termItem, $document);
-
-            // if (!$this->saveInflections($termItem, $document)) {
-            //     $this->error("Could not save inflections for term: '{$termItem->getTerm()}' with document id: '{$termItem->getDocumentId()}'");
-            // }
         }
     }
 

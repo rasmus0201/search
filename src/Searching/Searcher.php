@@ -64,7 +64,6 @@ class Searcher
 
         $scores = [];
 
-        // TODO Create info key/value for this?
         $averageDocumentLength = $this->infoRepository->getValueByKey('average_document_length');
 
         $searchTerms = $this->termIndexRepository->getByKeywords($this->filter(array_unique($keywords)));
@@ -79,6 +78,9 @@ class Searcher
         $inflectionTermsIdsById = array_flip($searchTermIds);
         $inflectionTerms = $this->termIndexRepository->getByIds($inflectionTermIds);
 
+        // TODO - we still don't get the correct terms from inflections...
+        dd($termInflections);
+
         $combinedTerms = array_merge($searchTerms, $inflectionTerms);
         $combinedTermIds = array_unique(array_merge($searchTermIds, $inflectionTermIds));
 
@@ -91,22 +93,23 @@ class Searcher
 
         $documents = $this->constructDocuments($documents);
 
-        $termFrequencies = [];
-        foreach ($searchTerms as $queryTerm) {
-            if (!isset($termFrequencies[$queryTerm['id']])) {
-                $termFrequencies[$queryTerm['id']] = 0;
-            }
-
-            $termFrequencies[$queryTerm['id']]++;
-        }
-
-        foreach ($inflectionTermIds as $inflectionTermId) {
-            if (!isset($termFrequencies[$inflectionTermId])) {
-                $termFrequencies[$inflectionTermId] = 0;
-            }
-
-            $termFrequencies[$inflectionTermId]++;
-        }
+        // Should use document frequencies instead
+        // $termFrequencies = [];
+        // foreach ($searchTerms as $queryTerm) {
+        //     if (!isset($termFrequencies[$queryTerm['id']])) {
+        //         $termFrequencies[$queryTerm['id']] = 0;
+        //     }
+        //
+        //     $termFrequencies[$queryTerm['id']]++;
+        // }
+        //
+        // foreach ($inflectionTermIds as $inflectionTermId) {
+        //     if (!isset($termFrequencies[$inflectionTermId])) {
+        //         $termFrequencies[$inflectionTermId] = 0;
+        //     }
+        //
+        //     $termFrequencies[$inflectionTermId]++;
+        // }
 
         // IDF for search terms
         $searchTermsIdf = $this->idf($searchTerms);
@@ -120,38 +123,51 @@ class Searcher
         // Scores
         $bm25 = [];
 
+        $multiplierMap = [
+            'inflection' => 0.8,
+            'exact' => 1.1,
+        ];
+
         foreach ($documents as $documentId => $documentTerms) {
             $documentLength = count($documentTerms);
 
             $termsTokens = [];
+            $termIds = [];
             foreach ($documentTerms as $documentTerm) {
                 $termsTokens[] = $terms[$termsById[$documentTerm['term_id']]]['term'];
+                $termIds[] = $documentTerm['term_id'];
             }
+            $termFrequencies = array_count_values($termIds);
 
             $bm25[$documentId] = 0;
+            foreach ($searchTerms as $searchPosition => $queryTerm) {
+                $termId = $queryTerm['id'];
+                $idf = $searchTermsIdf[$termId];
 
-            foreach ($combinedTerms as $searchPosition => $queryTerm) {
-                $idf = $searchTermsIdf[$queryTerm['id']];
+                dump($inflectionTerms);
 
                 $tf = $this->bm25TF(
                     $k1,
                     $b,
-                    $termFrequencies[$queryTerm['id']],
+                    $termFrequencies[$termId] ?? 0,
                     $documentLength,
                     $averageDocumentLength
                 );
 
-                $bm25[$documentId] += ($idf * $tf);
+                $type = isset($searchTermsIdsById[$termId]) ? 'exact' : 'inflection';
+
+                $bm25[$documentId] += ($idf * $tf) * $multiplierMap[$type];
 
                 // Procimity scoring
-                // $proximity = $this->proximityScore(
-                //     $queryTerm['term'],
-                //     $searchPosition,
-                //     $termsTokens
-                // );
-                // $proximityScore = min(abs($proximity), $averageDocumentLength);
-                //
-                // $bm25[$documentId] -= $proximityScore;
+                // TODO Needs another algorithm
+                $proximity = $this->proximityScore(
+                    $queryTerm['term'],
+                    $searchPosition,
+                    $termsTokens
+                );
+                $proximityScore = min(abs($proximity), ($documentLength + 1));
+
+                $bm25[$documentId] -= $proximityScore;
             }
         }
 
