@@ -54,7 +54,7 @@ class InflectionRepository extends AbstractRepository
         $stmt = $this->dbh->prepare("
             SELECT i.id
             FROM inflections i
-            WHERE i.word IN (".$placeholders.")
+            WHERE i.inflection IN (".$placeholders.")
         ");
 
         $stmt->execute($params);
@@ -62,7 +62,7 @@ class InflectionRepository extends AbstractRepository
         $allInflections = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $stmt = $this->dbh->prepare("
-            INSERT INTO (`term_id`, `inflection_id`)
+            INSERT INTO term_has_inflections (`term_id`, `inflection_id`)
             VALUES (:term_id, :inflection_id)
         ");
 
@@ -81,9 +81,12 @@ class InflectionRepository extends AbstractRepository
         }
 
         $stmt = $this->dbh->prepare("
-            SELECT i.term_id, i.inflection
-            FROM inflections i
-            WHERE i.term_id IN (".implode(',', $termIds).")
+            SELECT ti.term_id, i.inflection
+            FROM term_has_inflections ti
+
+            INNER JOIN inflections i ON ti.inflection_id = i.id
+
+            WHERE ti.term_id IN (".implode(',', $termIds).")
         ");
 
         $stmt->execute();
