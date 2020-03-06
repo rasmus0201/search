@@ -20,6 +20,7 @@ $searcher = new Searcher(
 
 $res = [
     'document_ids' => [],
+    'scores' => [],
     'stats' => [
         'raw' => [
             'execution_time' => 0,
@@ -34,7 +35,7 @@ $res = [
 $dicts = [];
 
 if (isset($_GET['q'])) {
-    $res = $searcher->search(trim($_GET['q']), 10);
+    $res = $searcher->search(trim($_GET['q']), 25);
 }
 
 if (count($res['document_ids'])) {
@@ -109,6 +110,7 @@ if (count($res['document_ids'])) {
                 <div class="result">
                     <h3><?php echo $entry['headword']; ?></h3>
                     <small>EntryId: <?php echo $entry['id']; ?></small>
+                    <small>Score: <?php echo round($res['scores'][$entry['id']], 3); ?></small>
                     <?php
                         $dom = new DOMDocument('1.0', 'utf-8');
                         $dom->preserveWhiteSpace = false;

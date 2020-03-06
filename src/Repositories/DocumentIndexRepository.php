@@ -34,6 +34,22 @@ class DocumentIndexRepository extends AbstractRepository
         ]);
     }
 
+    public function getAverageLength()
+    {
+        $stmt = $this->dbh->prepare("
+            SELECT AVG(d.length) as average_document_length
+            FROM (
+                SELECT di.document_id, COUNT(*) AS length
+                FROM document_index di
+                GROUP BY di.document_id
+            ) d
+        ");
+
+        $stmt->execute();
+
+        return (float) $stmt->fetch(PDO::FETCH_ASSOC)['average_document_length'];
+    }
+
     public function getUniqueIdsByTermIds(array $termIds, $limit)
     {
         if (empty($termIds)) {

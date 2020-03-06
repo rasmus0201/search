@@ -15,7 +15,7 @@ class Searcher
 {
     use CanOpenConnections;
 
-    const LIMIT_DOCUMENTS = 30000;
+    const LIMIT_DOCUMENTS = 250000;
     const SEARCH_MAX_TOKENS = 12;
 
     private $config;
@@ -65,7 +65,7 @@ class Searcher
         $scores = [];
 
         // TODO Create info key/value for this?
-        $averageDocumentLength = 4;
+        $averageDocumentLength = $this->infoRepository->getValueByKey('average_document_length');
 
         $searchTerms = $this->termIndexRepository->getByKeywords($this->filter(array_unique($keywords)));
         $searchTerms = array_slice($searchTerms, 0, self::SEARCH_MAX_TOKENS);
@@ -75,7 +75,11 @@ class Searcher
 
         $termInflections = $this->inflectionRepository->getByTermIds($this->filter(array_unique($searchTermIds)));
         $inflectionTermIds = array_unique(array_column($termInflections, 'term_id'));
+        $inflectionTermIds = array_diff($inflectionTermIds, $searchTermIds);
+        $inflectionTermsIdsById = array_flip($searchTermIds);
+        $inflectionTerms = $this->termIndexRepository->getByIds($inflectionTermIds);
 
+        $combinedTerms = array_merge($searchTerms, $inflectionTerms);
         $combinedTermIds = array_unique(array_merge($searchTermIds, $inflectionTermIds));
 
         $documentIds = $this->documentIndexRepository->getUniqueIdsByTermIds($combinedTermIds, self::LIMIT_DOCUMENTS);
@@ -86,6 +90,23 @@ class Searcher
         $termsById = $this->termsById($terms);
 
         $documents = $this->constructDocuments($documents);
+
+        $termFrequencies = [];
+        foreach ($searchTerms as $queryTerm) {
+            if (!isset($termFrequencies[$queryTerm['id']])) {
+                $termFrequencies[$queryTerm['id']] = 0;
+            }
+
+            $termFrequencies[$queryTerm['id']]++;
+        }
+
+        foreach ($inflectionTermIds as $inflectionTermId) {
+            if (!isset($termFrequencies[$inflectionTermId])) {
+                $termFrequencies[$inflectionTermId] = 0;
+            }
+
+            $termFrequencies[$inflectionTermId]++;
+        }
 
         // IDF for search terms
         $searchTermsIdf = $this->idf($searchTerms);
@@ -108,16 +129,8 @@ class Searcher
             }
 
             $bm25[$documentId] = 0;
-            $termFrequencies = [];
-            foreach ($searchTerms as $queryTerm) {
-                if (!isset($termFrequencies[$queryTerm['id']])) {
-                    $termFrequencies[$queryTerm['id']] = 0;
-                }
 
-                $termFrequencies[$queryTerm['id']]++;
-            }
-
-            foreach ($searchTerms as $searchPosition => $queryTerm) {
+            foreach ($combinedTerms as $searchPosition => $queryTerm) {
                 $idf = $searchTermsIdf[$queryTerm['id']];
 
                 $tf = $this->bm25TF(
@@ -130,78 +143,23 @@ class Searcher
 
                 $bm25[$documentId] += ($idf * $tf);
 
-                $proximity = $this->proximityScore(
-                    $queryTerm['term'],
-                    $searchPosition,
-                    $termsTokens
-                );
-                $proximityScore = min(abs($proximity), $averageDocumentLength);
-
-                $bm25[$documentId] -= $proximityScore;
+                // Procimity scoring
+                // $proximity = $this->proximityScore(
+                //     $queryTerm['term'],
+                //     $searchPosition,
+                //     $termsTokens
+                // );
+                // $proximityScore = min(abs($proximity), $averageDocumentLength);
+                //
+                // $bm25[$documentId] -= $proximityScore;
             }
-
-            // $termFrequencies = [];
-            // $headwords = [];
-            // foreach ($documentTerms as $documentTerm) {
-            //     if (!isset($termFrequencies[$documentTerm['term_id']])) {
-            //         $termFrequencies[$documentTerm['term_id']] = 0;
-            //     }
-            //
-            //     $termFrequencies[$documentTerm['term_id']]++;
-            //
-            //     $headwords[] = $terms[$termsById[$documentTerm['term_id']]]['term'];
-            // }
-            //
-            // $documentText = implode(' ', $headwords);
-            //
-            // // Check for exact match
-            // if (in_array($documentText, [$searchPhrase, implode(' ', $keywords)])) {
-            //     $scores = [];
-            //     $scores[$documentId] = [];
-            //     $foundExact = true;
-            //
-            //     break;
-            // }
-            //
-            // foreach ($documentTerms as $key => $documentTerm) {
-            //     $termId = $documentTerm['term_id'];
-            //     $termPosition = $documentTerm['position'];
-            //     $term = $terms[$termsById[$termId]];
-            //
-            //     // TODO Which one is most correct?
-            //     // $tf = $termFrequencies[$termId] / $documentLength;
-            //     // $tf = $term['num_hits']; // Stopwords is weighted really high here
-            //     $tf = $termFrequencies[$termId];
-            //
-            //     $df = $term['num_docs'];
-            //     $idf = log($totalDocuments / max(1, $df));
-            //
-            //     $score = $tf * $idf;
-            //
-            //     // If a word matches the exact search but is not the same position
-            //     $proximity = $this->proximityScore($term['term'], $termPosition, $keywords);
-            //     $proximityScore = min(abs($proximity), 6);
-            //
-            //     $score -= $proximityScore;
-            //
-            //     if ($proximity === 0) {
-            //         $score *= 1.3;
-            //     }
-            //
-            //     if (!isset($searchTermsIdsById[$termId])) {
-            //         $score *= 0.8;
-            //     }
-            //
-            //     // TODO Maybe substract score if the document text's words have many that doesn't exist in the search phrase?
-            //
-            //     $scores[$documentId] = isset($scores[$documentId]) ? ($scores[$documentId] + $score) : $score;
-            // }
         }
 
         $best = $this->getBestMatches($bm25, $numOfResults);
 
         return [
             'document_ids' => array_keys($best),
+            'scores' => $best,
             'total_hits' => count($scores),
             'stats' => $this->getStats(),
         ];
@@ -233,7 +191,7 @@ class Searcher
     private function idf(array $terms)
     {
         // Is the total number of documents (docCount)
-        $totalDocuments = $this->infoRepository->getValueByKey('total_documents');
+        $totalDocuments = (int) $this->infoRepository->getValueByKey('total_documents');
 
         $result = [];
         foreach ($terms as $term) {

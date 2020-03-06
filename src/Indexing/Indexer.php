@@ -102,6 +102,7 @@ class Indexer
             if ($counter % $this->commitLimit == 0) {
                 $this->dbh->commit();
                 $this->infoRepository->updateByKey('total_documents', $counter);
+                $this->infoRepository->updateByKey('average_document_length', $this->documentIndexRepository->getAverageLength());
                 $this->success('Commited');
 
                 $this->dbh->beginTransaction();
@@ -112,6 +113,7 @@ class Indexer
         $this->success('Commited');
 
         $this->infoRepository->updateByKey('total_documents', $counter);
+        $this->infoRepository->updateByKey('average_document_length', $this->documentIndexRepository->getAverageLength());
 
         $this->success("Total documents: {$counter}");
     }
