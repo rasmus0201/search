@@ -4,6 +4,7 @@ https://www.elastic.co/guide/en/elasticsearch/guide/current/common-grams.html
 
 - Don't get high frequency terms until needed
 - Search with positional index using BM25TP
+- Field support (e.g. prioritize-when-lemma)
 - Stemming / Inflections?
 - Stopword support?
 - Fuzzy support?
