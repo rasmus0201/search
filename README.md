@@ -1,3 +1,10 @@
+TODO
+https://www.elastic.co/guide/en/elasticsearch/guide/current/common-terms.html
+https://www.elastic.co/guide/en/elasticsearch/guide/current/common-grams.html
+
+- Don't get high frequency terms until needed
+
+
 Links:
 
 https://github.com/yooper/php-text-analysis

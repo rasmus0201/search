@@ -62,10 +62,6 @@ class Searcher
             $this->normalizer->normalize($searchPhrase)
         );
 
-        // https://www.elastic.co/guide/en/elasticsearch/guide/current/common-terms.html
-        // https://www.elastic.co/guide/en/elasticsearch/guide/current/common-grams.html
-        // Stopwords / common terms?
-
         $scores = [];
 
         // TODO Create info key/value for this?
@@ -77,12 +73,12 @@ class Searcher
         $searchTermIds = array_unique(array_column($searchTerms, 'id'));
         $searchTermsIdsById = array_flip($searchTermIds);
 
-        // TODO Get the inflections from keywords
-        //      with a stemmer / lemmatizer
-        $inflectionTerms = $this->inflectionRepository->getByTermIds($this->filter(array_unique($searchTermIds)));
-        dd($inflectionTerms);
+        $termInflections = $this->inflectionRepository->getByTermIds($this->filter(array_unique($searchTermIds)));
+        $inflectionTermIds = array_unique(array_column($termInflections, 'term_id'));
 
-        $documentIds = $this->documentIndexRepository->getUniqueIdsByTermIds($searchTermIds, self::LIMIT_DOCUMENTS);
+        $combinedTermIds = array_unique(array_merge($searchTermIds, $inflectionTermIds));
+
+        $documentIds = $this->documentIndexRepository->getUniqueIdsByTermIds($combinedTermIds, self::LIMIT_DOCUMENTS);
 
         $documents = $this->documentIndexRepository->getByIds($documentIds);
 

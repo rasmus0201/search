@@ -11,7 +11,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Search\\": "./src"
+            "Search\\": "./src",
+            "Apollo\\": "./apollo",
+            "Dictcc\\": "./Dictcc"
         }
     }
 }

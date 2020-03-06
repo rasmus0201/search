@@ -2,10 +2,10 @@
 
 require 'run.php';
 
-use Search\Import\Apollo\EntryImporter;
-use Search\Import\Apollo\EntryLinker;
-use Search\Import\Apollo\InflectionLinker;
-use Search\Import\Apollo\LemmaImporter;
+use Apollo\Import\EntryImporter;
+use Apollo\Import\EntryLinker;
+use Apollo\Import\InflectionLinker;
+use Apollo\Import\LemmaImporter;
 use Search\Support\Config;
 
 $config = new Config();

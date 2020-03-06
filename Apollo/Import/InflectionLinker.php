@@ -1,12 +1,12 @@
 <?php
 
-namespace Search\Import\Apollo;
+namespace Apollo\Import;
 
 use PDO;
 use Search\Support\Config;
 use Search\Support\DB;
 
-class EntryLinker
+class InflectionLinker
 {
     const CHUNK_LIMIT = 10000;
 
@@ -24,22 +24,23 @@ class EntryLinker
 
     public function link()
     {
-        if (!$count = $this->count()) {
+        if (!$this->count()) {
             return;
         }
 
-        $chunks = range(0, floor($count / self::CHUNK_LIMIT));
-        foreach ($chunks as $chunk) {
-            $this->chunk(self::CHUNK_LIMIT, self::CHUNK_LIMIT * $chunk);
+        $offset = 0;
+        while ($this->count() > 0) {
+            $this->chunk(self::CHUNK_LIMIT, $offset);
+
+            $offset += self::CHUNK_LIMIT;
         }
     }
 
     private function count()
     {
         $stmt = $this->dbh->prepare("
-            SELECT COUNT(*) as count FROM entries
+            SELECT COUNT(*) as count FROM lemma_inflections
             WHERE `lemma_id` IS NULL
-            AND `lemma_ref` IS NOT NULL
         ");
         $stmt->execute();
 
@@ -49,22 +50,21 @@ class EntryLinker
     private function chunk($limit, $offset)
     {
         $stmt = $this->dbh->prepare("
-            UPDATE `entries` e
+            UPDATE `lemma_inflections` i
 
             INNER JOIN (
-                SELECT e.`id`
-                FROM `entries` e
-                ORDER BY e.`id`
+                SELECT i.`id`
+                FROM `lemma_inflections` i
+                ORDER BY `id`
                 LIMIT :offset, :limit
             ) as tmp USING (`id`)
 
             INNER JOIN lemmas l
-                ON l.`lemma_ref` = e.`lemma_ref`
+                ON l.`raw_lemma_id` = i.`raw_lemma_id`
 
-            SET e.`lemma_id` = l.`id`
+            SET i.`lemma_id` = l.`id`
 
-            WHERE e.`lemma_id` IS NULL
-            AND e.`lemma_ref` IS NOT NULL
+            WHERE i.`lemma_id` IS NULL
         ");
 
         $stmt->execute([

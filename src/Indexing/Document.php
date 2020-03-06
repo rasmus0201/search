@@ -6,6 +6,7 @@ class Document
 {
     private $id;
     private $document;
+    private $inflections = [];
 
     public function setDocument($document)
     {
@@ -25,5 +26,15 @@ class Document
     public function getId()
     {
         return $this->id;
+    }
+
+    public function setInflections(array $inflections)
+    {
+        $this->inflections = $inflections;
+    }
+
+    public function getInflections()
+    {
+        return $this->inflections;
     }
 }

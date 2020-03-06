@@ -11,6 +11,7 @@ use Search\Indexing\Term;
 use Search\NormalizerInterface;
 use Search\TokenizerInterface;
 use Search\Repositories\DocumentIndexRepository;
+use Search\Repositories\InflectionRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\Config;
@@ -26,6 +27,7 @@ class Indexer
     private $query;
 
     private $documentIndexRepository;
+    private $inflectionRepository;
     private $infoRepository;
     private $termIndexRepository;
 
@@ -46,6 +48,7 @@ class Indexer
         $this->dbh = $this->createDatabaseHandle($this->config);
 
         $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
+        $this->inflectionRepository = new InflectionRepository($this->dbh);
         $this->infoRepository = new InfoRepository($this->dbh);
         $this->termIndexRepository = new TermIndexRepository($this->dbh);
     }
@@ -79,6 +82,7 @@ class Indexer
         }
 
         $this->infoRepository->createTableIfNotExists();
+        $this->inflectionRepository->createTableIfNotExists();
         $this->termIndexRepository->createTableIfNotExists();
         $this->documentIndexRepository->createTableIfNotExists();
 
@@ -112,7 +116,7 @@ class Indexer
         $this->success("Total documents: {$counter}");
     }
 
-    private function indexDocument($document)
+    private function indexDocument(Document $document)
     {
         // Normalize input to only contain valid data
         $document->setDocument(
@@ -137,8 +141,15 @@ class Indexer
             }
 
             if (!$this->saveTerm($termItem)) {
-                $this->error("Could not save term: '{$termItem->getTerm()}' with document id: {$termItem->getDocumentId()}");
+                $this->error("Could not save term: '{$termItem->getTerm()}' with document id: '{$termItem->getDocumentId()}'");
+                continue;
             }
+
+            $this->saveInflections($termItem, $document);
+
+            // if (!$this->saveInflections($termItem, $document)) {
+            //     $this->error("Could not save inflections for term: '{$termItem->getTerm()}' with document id: '{$termItem->getDocumentId()}'");
+            // }
         }
     }
 
@@ -165,15 +176,19 @@ class Indexer
         return true;
     }
 
-    private function documentGuard($document)
+    private function saveInflections(Term $term, Document $document)
     {
-        if (!isset($document['id'])) {
-            throw new Exception("Document must have an 'id' key.");
+        if ($term->getTerm() !== $document->getDocument()) {
+            return true;
         }
 
-        if (!isset($document['body'])) {
-            throw new Exception("Document must have a 'body' key.");
+        try {
+            $this->inflectionRepository->createMany($term, $document->getInflections());
+        } catch (\Exception $e) {
+            return false;
         }
+
+        return true;
     }
 
     private function success($text)

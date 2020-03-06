@@ -45,7 +45,7 @@ foreach ($imports as $import) {
 
     $importer = new Importer($fileName, $import['direction_id']);
     $importer->setConnection($config);
-    $importer->import('test_documents');
+    $importer->import('documents');
 
     echo 'Finished importing '. $fileName . PHP_EOL;
 }

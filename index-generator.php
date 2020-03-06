@@ -2,14 +2,14 @@
 
 require 'run.php';
 
-use Search\DefaultNormalizer;
-use Search\DefaultTokenizer;
-use Search\Indexing\DefaultDocumentTransformer;
+use Apollo\DocumentTransformer as ApolloDocumentTransformer;
 use Search\Indexing\Indexer;
 use Search\Support\Config;
 use Search\Support\StaticDB;
 
 StaticDB::run("DROP TABLE IF EXISTS info");
+StaticDB::run("DROP TABLE IF EXISTS term_has_inflections");
+StaticDB::run("DROP TABLE IF EXISTS inflections");
 StaticDB::run("DROP TABLE IF EXISTS term_index");
 StaticDB::run("DROP TABLE IF EXISTS document_index");
 
@@ -27,13 +27,13 @@ $config->setPassword('');
 
 $indexer = new Indexer(
     $config,
-    new DefaultDocumentTransformer(),
-    new DefaultNormalizer(),
-    new DefaultTokenizer()
+    new ApolloDocumentTransformer($config),
+    new \Search\DefaultNormalizer(),
+    new \Search\DefaultTokenizer()
 );
 
 $indexer->setQuery("
-    SELECT e.`id`, e.`headword` as document FROM `entries` e
+    SELECT e.`id`, e.`lemma_id`, e.`headword` as document FROM `entries` e
     WHERE e.`direction_id` IN (7, 8)
 ");
 

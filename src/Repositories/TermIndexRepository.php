@@ -101,11 +101,13 @@ class TermIndexRepository extends AbstractRepository
             $params[':o' . $key] = $value;
         }
 
+        // TODO Should BINARY be used in where?
         $stmt = $this->dbh->prepare("
             SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs` FROM term_index i
-            WHERE BINARY i.`term` IN (".$placeholders.")
+            WHERE i.`term` IN (".$placeholders.")
             ORDER BY FIELD(i.`term`, ".$orderPlaceholders.")
         ");
+
 
         $stmt->execute($params);
 

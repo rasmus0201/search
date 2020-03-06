@@ -3,9 +3,77 @@
 namespace Search\Repositories;
 
 use PDO;
+use Search\Indexing\Term;
 
 class InflectionRepository extends AbstractRepository
 {
+    public function createTableIfNotExists()
+    {
+        $this->dbh->exec("CREATE TABLE IF NOT EXISTS inflections (
+            `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
+            `inflection` VARCHAR(255) NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `unique_inflection` (`inflection`),
+            KEY `idx_inflection` (`inflection`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+        $this->dbh->exec("CREATE TABLE IF NOT EXISTS term_has_inflections (
+            `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
+            `term_id` INT(11) unsigned NOT NULL,
+            `inflection_id` INT(11) unsigned NOT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `unique_term_inflection` (`term_id`, `inflection_id`),
+            KEY `idx_term_id_inflection_id` (`term_id`, `inflection_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+    }
+
+    public function createMany(Term $term, array $inflections)
+    {
+        if (empty($inflections)) {
+            return;
+        }
+
+        $stmt = $this->dbh->prepare("
+            INSERT INTO inflections (`inflection`)
+            VALUES (:inflection)
+            ON DUPLICATE KEY UPDATE `inflection` = `inflection`
+        ");
+
+        foreach ($inflections as $inflection) {
+            $stmt->bindValue(':inflection', $inflection);
+            $stmt->execute();
+        }
+
+        $placeholders = ':' . implode(', :', range(0, count($inflections) - 1));
+
+        $params = [];
+        foreach ($inflections as $key => $value) {
+            $params[':' . $key] = $value;
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT i.id
+            FROM inflections i
+            WHERE i.word IN (".$placeholders.")
+        ");
+
+        $stmt->execute($params);
+
+        $allInflections = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $this->dbh->prepare("
+            INSERT INTO (`term_id`, `inflection_id`)
+            VALUES (:term_id, :inflection_id)
+        ");
+
+        $stmt->bindValue(':term_id', $term->getId());
+
+        foreach ($allInflections as $inflection) {
+            $stmt->bindValue(':inflection_id', $inflection['id']);
+            $stmt->execute();
+        }
+    }
+
     public function getByTermIds(array $termIds)
     {
         if (empty($termIds)) {
@@ -13,25 +81,12 @@ class InflectionRepository extends AbstractRepository
         }
 
         $stmt = $this->dbh->prepare("
-            SELECT DISTINCT ti.id, tmp.word
-
-            FROM (
-                SELECT DISTINCT ti.id, i.word
-                FROM term_index ti
-
-                INNER JOIN document_index di ON ti.id = di.term_id
-                INNER JOIN entries e ON di.document_id = e.id
-                INNER JOIN inflections i ON e.lemma_id = i.lemma_id
-
-                WHERE BINARY ti.id IN (".implode(',', $termIds).")
-            ) tmp
-
-            INNER JOIN term_index ti ON BINARY tmp.word = ti.term
+            SELECT i.term_id, i.inflection
+            FROM inflections i
+            WHERE i.term_id IN (".implode(',', $termIds).")
         ");
 
         $stmt->execute();
-
-        dd($stmt->fetchAll(PDO::FETCH_ASSOC));
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

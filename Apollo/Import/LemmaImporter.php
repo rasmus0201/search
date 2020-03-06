@@ -1,6 +1,6 @@
 <?php
 
-namespace Search\Import\Apollo;
+namespace Apollo\Import;
 
 use PDO;
 use Search\Import\XmlHelper;
@@ -20,25 +20,6 @@ class LemmaImporter implements DatabaseImporterInterface
     private $languages = [
         'dan',
         'eng',
-    ];
-
-    private $wordclasses = [
-        'adjective',
-        'adverb',
-        'article',
-        'conjunction',
-        'infinitive marker',
-        'interjection',
-        'no classification',
-        'noun',
-        'numeral',
-        'onomatopoeic word',
-        'prefix',
-        'preposition',
-        'pronoun',
-        'proper noun',
-        'suffix',
-        'verb',
     ];
 
     public function __construct(Config $config)

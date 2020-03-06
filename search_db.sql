@@ -133,9 +133,9 @@ CREATE TABLE `entries` (
 # Dump of table inflections
 # ------------------------------------------------------------
 
-DROP TABLE IF EXISTS `inflections`;
+DROP TABLE IF EXISTS `lemma_inflections`;
 
-CREATE TABLE `inflections` (
+CREATE TABLE `lemma_inflections` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `raw_lemma_id` int(11) NOT NULL,
   `lemma_id` int(11) DEFAULT NULL,
@@ -243,24 +243,6 @@ CREATE TABLE `term_index` (
   UNIQUE KEY `unique_term` (`term`),
   KEY `idx_term` (`term`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
-
-# Dump of table test_documents
-# ------------------------------------------------------------
-
-DROP TABLE IF EXISTS `test_documents`;
-
-CREATE TABLE `test_documents` (
-  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `direction_id` int(11) NOT NULL,
-  `headword` varchar(255) NOT NULL DEFAULT '',
-  `translation` varchar(255) NOT NULL DEFAULT '',
-  `wordclass` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
-
 
 
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;

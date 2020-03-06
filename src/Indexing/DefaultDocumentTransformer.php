@@ -9,11 +9,11 @@ class DefaultDocumentTransformer implements IndexTransformerInterface
 {
     public function transform(array $row) : Document
     {
-        $item = new Document();
+        $document = new Document();
 
-        $item->setId($row['id']);
-        $item->setDocument($row['document']);
+        $document->setId($row['id']);
+        $document->setDocument($row['document']);
 
-        return $item;
+        return $document;
     }
 }

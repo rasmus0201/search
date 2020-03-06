@@ -1,10 +1,10 @@
 <?php
 
-namespace Search\Import\Dictcc;
+namespace Dictcc\Import;
 
+use Dictcc\Import\Models\Entry;
 use Search\Import\AbstractFileImporter;
 use Search\Import\FileImporterInterface;
-use Search\Import\Dictcc\Models\Entry;
 
 class Importer extends AbstractFileImporter implements FileImporterInterface
 {
