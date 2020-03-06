@@ -4,7 +4,7 @@ require 'run.php';
 
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Search\Indexing\DictccTransformer;
+use Search\Indexing\DefaultDocumentTransformer;
 use Search\Indexing\Indexer;
 use Search\Support\Config;
 use Search\Support\StaticDB;
@@ -28,7 +28,7 @@ $config->setPassword('');
 
 $indexer = new Indexer(
     $config,
-    new DictccTransformer(),
+    new DefaultDocumentTransformer(),
     new DefaultNormalizer(),
     new DefaultTokenizer()
 );

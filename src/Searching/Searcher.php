@@ -57,9 +57,14 @@ class Searcher
 
         $keywords = $this->tokenizer->tokenize($searchPhrase);
 
+        // https://www.elastic.co/guide/en/elasticsearch/guide/current/common-terms.html
+        // https://www.elastic.co/guide/en/elasticsearch/guide/current/common-grams.html
+        // Stopwords / common terms?
+
         $scores = [];
-        $totalDocuments = $this->infoRepository->getValueByKey('total_documents');
-        $averageDocumentLength = 5;
+
+        // TODO Create info key/value for this?
+        $averageDocumentLength = 4;
 
         $searchTerms = $this->termIndexRepository->getByKeywords(array_values(array_filter(array_unique($keywords))));
         $searchTerms = array_slice($searchTerms, 0, self::SEARCH_MAX_TOKENS);
@@ -68,7 +73,7 @@ class Searcher
         $searchTermsIdsById = array_flip($searchTermIds);
 
         // TODO Get the inflections from keywords
-        //      with a stemmer (dictionary stemmer)
+        //      with a stemmer / lemmatizer
         $inflectionTerms = '';
 
         $documentIds = $this->documentIndexRepository->getUniqueIdsByTermIds($searchTermIds, self::LIMIT_DOCUMENTS);
@@ -80,10 +85,25 @@ class Searcher
 
         $documents = $this->constructDocuments($documents);
 
-        $foundExact = false;
+        // IDF for search terms
+        $searchTermsIdf = $this->idf($searchTerms);
+
+        // b -> 0.75 (elasticsearch)
+        $b = 0.75;
+
+        // k1 -> 1.2 (elasticsearch)
+        $k1 = 1.2;
+
+        // Scores
         $bm25 = [];
+
         foreach ($documents as $documentId => $documentTerms) {
             $documentLength = count($documentTerms);
+
+            $termsTokens = [];
+            foreach ($documentTerms as $documentTerm) {
+                $termsTokens[] = $terms[$termsById[$documentTerm['term_id']]]['term'];
+            }
 
             $bm25[$documentId] = 0;
             $termFrequencies = [];
@@ -95,33 +115,31 @@ class Searcher
                 $termFrequencies[$queryTerm['id']]++;
             }
 
-            foreach ($searchTerms as $queryTerm) {
-                // docCount -> is the total number of documents
-                // f(q_i) -> is the number of documents which contain the ith query term
-                // num = docCount - f(q_i) + 0.5
-                // denom = f(q_i) + 0.5
-                // idf = ln( 1 + (num / denom))
+            foreach ($searchTerms as $searchPosition => $queryTerm) {
+                $idf = $searchTermsIdf[$queryTerm['id']];
 
-                // b -> 0.75 (elasticsearch)
-                // k1 -> 1.2 (elasticsearch)
-                // f(q_i, D) -> How many times does the ith query term occur in document D
-                // tf = (f(q_i, D) * (k1 + 1)) / (f(q_i, D) + k1 * (1 - b + b * (docNumTerms / avgDocNumTerms)))
-
-                $docCount = $totalDocuments;
-                $freqInDocs = $queryTerm['num_docs'];
-                $numerator = $docCount - $freqInDocs + 0.75;
-                $denominator = $freqInDocs + 0.75;
-                $idf = log(1 + ($numerator / $denominator));
-                dump($queryTerm, $idf);
-
-                $avgDocNumTerms = $averageDocumentLength;
-                $docNumTerms = $documentLength;
-                $freqInCurrentDoc = $termFrequencies[$queryTerm['id']];
-                $b = 0.5;
-                $k1 = 1.2;
-                $tf = ($freqInCurrentDoc * ($k1 + 1)) / ($freqInCurrentDoc + $k1 * (1 - $b + $b * ($docNumTerms / $avgDocNumTerms)));
+                $tf = $this->bm25TF(
+                    $k1,
+                    $b,
+                    $termFrequencies[$queryTerm['id']],
+                    $documentLength,
+                    $averageDocumentLength
+                );
 
                 $bm25[$documentId] += ($idf * $tf);
+
+                $proximity = $this->proximityScore(
+                    $queryTerm['term'],
+                    $searchPosition,
+                    $termsTokens
+                );
+                $proximityScore = min(abs($proximity), $averageDocumentLength);
+
+                dump($documentId, implode(' ', $termsTokens), $queryTerm, $idf, $tf);
+                dump('proximity: ' . $proximityScore);
+                dump('-----------');
+
+                $bm25[$documentId] -= $proximityScore;
             }
 
             // $termFrequencies = [];
@@ -203,6 +221,42 @@ class Searcher
         );
     }
 
+    private function bm25TF($k1, $b, $termFrequency, $documentLength, $averageDocumentLength)
+    {
+        // f(q_i, D) -> How many times does the i'th query term occur in document D
+        $freqInCurrentDoc = $termFrequency;
+
+        // tf = (f(q_i, D) * (k1 + 1)) / (f(q_i, D) + k1 * (1 - b + b * (docNumTerms / avgDocNumTerms)))
+        $tf = ($freqInCurrentDoc * ($k1 + 1)) / ($freqInCurrentDoc + $k1 * ((1 - $b) + $b * ($documentLength / $averageDocumentLength)));
+
+        return $tf;
+    }
+
+    private function idf(array $terms)
+    {
+        // Is the total number of documents (docCount)
+        $totalDocuments = $this->infoRepository->getValueByKey('total_documents');
+
+        $result = [];
+        foreach ($terms as $term) {
+            // f(q_i) -> is the number of documents which contain the i'th query term
+            $freqInDocs = $term['num_docs'];
+
+            // num = docCount - f(q_i) + 0.5
+            $numerator = $totalDocuments - $freqInDocs + 0.5;
+
+            // denom = f(q_i) + 0.5
+            $denominator = $freqInDocs + 0.5;
+
+            // idf = ln( 1 + (num / denom))
+            $idf = log(1 + ($numerator / $denominator));
+
+            $result[$term['id']] = $idf;
+        }
+
+        return $result;
+    }
+
     private function proximityScore($search, $position, array $keywords)
     {
         $finds = [];
@@ -242,6 +296,7 @@ class Searcher
 
         return $result;
     }
+
 
     private function startStats()
     {
