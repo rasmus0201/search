@@ -1,6 +1,6 @@
 <?php
 
-require 'run.php';
+require __DIR__ . '/../run.php';
 
 use Apollo\DocumentTransformer as ApolloDocumentTransformer;
 use Search\Indexing\Indexer;
@@ -12,12 +12,6 @@ StaticDB::run("DROP TABLE IF EXISTS term_has_inflections");
 StaticDB::run("DROP TABLE IF EXISTS inflections");
 StaticDB::run("DROP TABLE IF EXISTS term_index");
 StaticDB::run("DROP TABLE IF EXISTS document_index");
-
-// TODO
-// Search with positional index using TF-IDF or BM25TP
-// Stemming / Inflections?
-// Stopword support?
-// Fuzzy support?
 
 $config = new Config();
 $config->setHost('localhost');

@@ -1,6 +1,6 @@
 <?php
 
-require 'run.php';
+require __DIR__ . '/../run.php';
 
 use Apollo\Import\EntryImporter;
 use Apollo\Import\EntryLinker;

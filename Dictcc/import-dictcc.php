@@ -1,6 +1,6 @@
 <?php
 
-require 'run.php';
+require __DIR__ . '/../run.php';
 
 use Search\Import\Dictcc\Importer;
 use Search\Support\Config;
