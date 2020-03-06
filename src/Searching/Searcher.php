@@ -7,6 +7,7 @@ use Search\NormalizerInterface;
 use Search\TokenizerInterface;
 use Search\Repositories\DocumentIndexRepository;
 use Search\Repositories\InfoRepository;
+use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\Config;
 
@@ -22,6 +23,7 @@ class Searcher
     private $tokenizer;
 
     private $documentIndexRepository;
+    private $inflectionRepository;
     private $infoRepository;
     private $termIndexRepository;
 
@@ -41,6 +43,7 @@ class Searcher
         $this->dbh = $this->createDatabaseHandle($this->config);
 
         $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
+        $this->inflectionRepository = new InflectionRepository($this->dbh);
         $this->infoRepository = new InfoRepository($this->dbh);
         $this->termIndexRepository = new TermIndexRepository($this->dbh);
     }
@@ -55,7 +58,9 @@ class Searcher
     {
         $this->startStats();
 
-        $keywords = $this->tokenizer->tokenize($searchPhrase);
+        $keywords = $this->tokenizer->tokenize(
+            $this->normalizer->normalize($searchPhrase)
+        );
 
         // https://www.elastic.co/guide/en/elasticsearch/guide/current/common-terms.html
         // https://www.elastic.co/guide/en/elasticsearch/guide/current/common-grams.html
@@ -66,7 +71,7 @@ class Searcher
         // TODO Create info key/value for this?
         $averageDocumentLength = 4;
 
-        $searchTerms = $this->termIndexRepository->getByKeywords(array_values(array_filter(array_unique($keywords))));
+        $searchTerms = $this->termIndexRepository->getByKeywords($this->filter(array_unique($keywords)));
         $searchTerms = array_slice($searchTerms, 0, self::SEARCH_MAX_TOKENS);
 
         $searchTermIds = array_unique(array_column($searchTerms, 'id'));
@@ -74,7 +79,8 @@ class Searcher
 
         // TODO Get the inflections from keywords
         //      with a stemmer / lemmatizer
-        $inflectionTerms = '';
+        $inflectionTerms = $this->inflectionRepository->getByTermIds($this->filter(array_unique($searchTermIds)));
+        dd($inflectionTerms);
 
         $documentIds = $this->documentIndexRepository->getUniqueIdsByTermIds($searchTermIds, self::LIMIT_DOCUMENTS);
 
@@ -134,10 +140,6 @@ class Searcher
                     $termsTokens
                 );
                 $proximityScore = min(abs($proximity), $averageDocumentLength);
-
-                dump($documentId, implode(' ', $termsTokens), $queryTerm, $idf, $tf);
-                dump('proximity: ' . $proximityScore);
-                dump('-----------');
 
                 $bm25[$documentId] -= $proximityScore;
             }
@@ -297,6 +299,10 @@ class Searcher
         return $result;
     }
 
+    private function filter(array $keywords)
+    {
+        return array_values(array_filter($keywords));
+    }
 
     private function startStats()
     {

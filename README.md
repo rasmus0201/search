@@ -18,6 +18,7 @@ https://www.searchenginepeople.com/blog/how-search-really-works-the-index-2.html
 
 
 http://stefan.buettcher.org/papers/buettcher_2006_term_proximity.pdf
+https://arxiv.org/pdf/1709.03260.pdf
 https://www.researchgate.net/publication/220314015_Modeling_term_proximity_for_probabilistic_information_retrieval_models
 https://www.researchgate.net/publication/225174089_Term_Proximity_Scoring_for_Keyword-Based_Retrieval_Systems
 https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/ppm.pdf

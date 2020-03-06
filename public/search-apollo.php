@@ -3,7 +3,6 @@
 use Search\Support\StaticDB;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Search\Indexing\Indexer;
 use Search\Searching\Searcher;
 use Search\Support\Config;
 
