@@ -79,7 +79,6 @@ class Searcher
         $inflectionTerms = $this->termIndexRepository->getByIds($inflectionTermIds);
 
         // TODO - we still don't get the correct terms from inflections...
-        dd($termInflections);
 
         $combinedTerms = array_merge($searchTerms, $inflectionTerms);
         $combinedTermIds = array_unique(array_merge($searchTermIds, $inflectionTermIds));
@@ -144,8 +143,6 @@ class Searcher
                 $termId = $queryTerm['id'];
                 $idf = $searchTermsIdf[$termId];
 
-                dump($inflectionTerms);
-
                 $tf = $this->bm25TF(
                     $k1,
                     $b,
@@ -157,15 +154,27 @@ class Searcher
                 $type = isset($searchTermsIdsById[$termId]) ? 'exact' : 'inflection';
 
                 $bm25[$documentId] += ($idf * $tf) * $multiplierMap[$type];
+            }
 
-                // Procimity scoring
+            foreach ($documentTerms as $documentTerm) {
+                $termId = $documentTerm['term_id'];
+                $termPosition = $documentTerm['position'];
+                $term = $terms[$termsById[$termId]];
+
+                // TODO inflections
+                $infls = array_flip(array_column($termInflections, 'inflection'));
+                if (isset($infls[$term['term']])) {
+                    $bm25[$documentId] += ($multiplierMap['inflection'] * 5);
+                }
+
+                // Proximity scoring
                 // TODO Needs another algorithm
                 $proximity = $this->proximityScore(
-                    $queryTerm['term'],
-                    $searchPosition,
-                    $termsTokens
+                    $term['term'],
+                    $termPosition,
+                    $keywords
                 );
-                $proximityScore = min(abs($proximity), ($documentLength + 1));
+                $proximityScore = $documentLength - min(abs($proximity), ($documentLength + 1));
 
                 $bm25[$documentId] -= $proximityScore;
             }
