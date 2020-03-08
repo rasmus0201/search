@@ -23,7 +23,8 @@ class InflectionRepository extends AbstractRepository
             `inflection_id` INT(11) unsigned NOT NULL,
             PRIMARY KEY (`id`),
             UNIQUE KEY `unique_term_inflection` (`term_id`, `inflection_id`),
-            KEY `idx_term_id_inflection_id` (`term_id`, `inflection_id`)
+            KEY `idx_term_id_inflection_id` (`term_id`, `inflection_id`),
+            KEY `idx_inflection_id_term_id` (`inflection_id`, `term_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
     }
 
@@ -72,6 +73,37 @@ class InflectionRepository extends AbstractRepository
             $stmt->bindValue(':inflection_id', $inflection['id']);
             $stmt->execute();
         }
+    }
+
+    public function getByKeywords(array $keywords)
+    {
+        if (empty($keywords)) {
+            return [];
+        }
+
+        $placeholders = ':' . implode(', :', range(0, count($keywords) - 1));
+
+        $params = [];
+        foreach ($keywords as $key => $value) {
+            $params[':' . $key] = $value;
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT thi.term_id, i.inflection
+            FROM term_has_inflections thi
+
+            INNER JOIN (
+                SELECT DISTINCT thi.term_id
+                FROM term_has_inflections thi
+                INNER JOIN inflections i ON i.id = thi.inflection_id
+                WHERE i.inflection IN (".$placeholders.")
+            ) t ON t.term_id = thi.term_id
+            INNER JOIN inflections i ON i.id = thi.inflection_id
+        ");
+
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getByTermIds(array $termIds)

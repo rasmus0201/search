@@ -83,9 +83,7 @@ class Searcher
         $combinedTerms = array_merge($searchTerms, $inflectionTerms);
         $combinedTermIds = array_unique(array_merge($searchTermIds, $inflectionTermIds));
 
-        $documentIds = $this->documentIndexRepository->getUniqueIdsByTermIds($combinedTermIds, self::LIMIT_DOCUMENTS);
-
-        $documents = $this->documentIndexRepository->getByIds($documentIds);
+        $documents = $this->documentIndexRepository->getUniqueByTermIds($combinedTermIds, self::LIMIT_DOCUMENTS);
 
         $terms = $this->termIndexRepository->getByIds(array_unique(array_column($documents, 'term_id')));
         $termsById = $this->termsById($terms);
@@ -179,6 +177,7 @@ class Searcher
                 $bm25[$documentId] -= $proximityScore;
             }
         }
+
 
         $best = $this->getBestMatches($bm25, $numOfResults);
 

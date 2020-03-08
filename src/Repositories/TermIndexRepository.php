@@ -103,14 +103,35 @@ class TermIndexRepository extends AbstractRepository
 
         // TODO Should BINARY be used in where?
         $stmt = $this->dbh->prepare("
-            SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs` FROM term_index i
+            SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs`
+            FROM term_index i
             WHERE i.`term` IN (".$placeholders.")
             ORDER BY FIELD(i.`term`, ".$orderPlaceholders.")
         ");
 
-
         $stmt->execute($params);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getLowFrequencyTerms(array $keywords, $totalDocuments, $cutoffFrequency = 0.01)
+    {
+        $terms = $this->getByKeywords($keywords);
+        $termsPopularity = array_column($terms, 'num_docs', 'term');
+
+        $lowFreqTerms = [];
+        foreach ($keywords as $keyword) {
+            if (!isset($termsPopularity[$keyword])) {
+                $lowFreqTerms[] = $keyword;
+
+                continue;
+            }
+
+            if (($termsPopularity[$keyword] / $totalDocuments) < $cutoffFrequency) {
+                $lowFreqTerms[] = $keyword;
+            }
+        }
+
+        return [$lowFreqTerms, $terms];
     }
 }

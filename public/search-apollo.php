@@ -3,7 +3,7 @@
 use Search\Support\StaticDB;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Search\Searching\Searcher;
+use Apollo\ApolloSearcher as Searcher;
 use Search\Support\Config;
 
 $config = new Config();
@@ -95,8 +95,9 @@ if (count($res['document_ids'])) {
             <input type="button" name="submit" value="Søg...">
         </form>
         <p>
-            Search took: <?php echo $res['stats']['formatted']['execution_time']; ?>
+            <span>Search took: <?php echo $res['stats']['formatted']['execution_time']; ?></span>
             <br>
+            <span>Results: <?php echo count($res['document_ids']); ?></span>
             <br>
             <span>Memory usage: <?php echo $res['stats']['formatted']['memory_usage']; ?></span>
         </p>

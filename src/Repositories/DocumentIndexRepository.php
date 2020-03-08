@@ -50,16 +50,17 @@ class DocumentIndexRepository extends AbstractRepository
         return (float) $stmt->fetch(PDO::FETCH_ASSOC)['average_document_length'];
     }
 
-    public function getUniqueIdsByTermIds(array $termIds, $limit)
+    public function getUniqueByTermIds(array $termIds, $limit)
     {
         if (empty($termIds)) {
             return [];
         }
 
         $stmt = $this->dbh->prepare("
-            SELECT DISTINCT i.`document_id` FROM document_index i
+            SELECT DISTINCT i.`document_id`, i.`term_id`, i.`position`
+            FROM document_index i
             WHERE i.`term_id` IN (" . implode(',', $termIds) . ")
-            GROUP BY i.`document_id`
+            ORDER BY i.`document_id`, i.`position`
             LIMIT :limit
         ");
 
@@ -67,7 +68,7 @@ class DocumentIndexRepository extends AbstractRepository
             ':limit' => $limit,
         ]);
 
-        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'document_id');
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getByIds(array $documentIds)
@@ -84,6 +85,47 @@ class DocumentIndexRepository extends AbstractRepository
 
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);;
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getLazyByTerms(array $terms)
+    {
+        if (empty($terms)) {
+            return [];
+        }
+
+        $placeholders = ':' . implode(', :', range(0, count($terms) - 1));
+
+        $params = [];
+        foreach ($terms as $key => $value) {
+            $params[':' . $key] = $value;
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT di.`document_id`, t.`length`, di.`position`, di.`term_id`, ti.`term`, ti.`num_hits`, ti.`num_docs`
+            FROM document_index di
+
+            INNER JOIN (
+                SELECT di.`document_id`, COUNT(*) as length
+                FROM document_index di
+
+                INNER JOIN term_index ti ON ti.id = di.term_id
+
+                WHERE BINARY ti.`term` IN (".$placeholders.")
+
+                GROUP BY di.`document_id`
+            ) t ON t.document_id = di.document_id
+            INNER JOIN term_index ti ON ti.id = di.term_id
+
+            ORDER BY
+                di.`document_id` ASC,
+                di.`position` ASC
+        ");
+
+        $stmt->execute($params);
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            yield $row;
+        }
     }
 }
