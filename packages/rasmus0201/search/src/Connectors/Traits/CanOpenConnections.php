@@ -2,6 +2,7 @@
 
 namespace Search\Connectors\Traits;
 
+use Exception;
 use Search\Connectors\MySqlConnector;
 use Search\Connectors\SQLiteConnector;
 use Search\Support\DatabaseConfig;

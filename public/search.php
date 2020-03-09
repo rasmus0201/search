@@ -1,9 +1,9 @@
 <?php
 
-use Search\Support\StaticDB;
+use App\Database\Database;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Dictionaries\Apollo\ApolloSearcher as Searcher;
+use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
 use Search\Support\DatabaseConfig;
 
 $config = new DatabaseConfig();
@@ -41,7 +41,7 @@ if (isset($_GET['q'])) {
 if (count($res['document_ids'])) {
     $ids = implode(', ', $res['document_ids']);
 
-    $stmt = StaticDB::run("
+    $stmt = Database::run("
         SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name FROM entries e
 
         INNER JOIN directions dir ON dir.id = e.direction_id

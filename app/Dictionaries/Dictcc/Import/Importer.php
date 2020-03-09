@@ -1,8 +1,8 @@
 <?php
 
-namespace Dictionaries\Dictcc\Import;
+namespace App\Dictionaries\Dictcc\Import;
 
-use Dictionaries\Dictcc\Import\Models\Entry;
+use App\Dictionaries\Dictcc\Import\Models\Entry;
 use Search\Import\AbstractFileImporter;
 use Search\Import\FileImporterInterface;
 

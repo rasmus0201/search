@@ -1,6 +1,6 @@
 <?php
 
-namespace Dictionaries\Apollo\Import;
+namespace App\Dictionaries\Apollo\Import;
 
 use PDO;
 use Search\Import\XmlHelper;

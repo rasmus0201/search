@@ -1,6 +1,6 @@
 <?php
 
-namespace Dictionaries\Dictcc\Import\Models;
+namespace App\Dictionaries\Dictcc\Import\Models;
 
 class Entry implements \JsonSerializable
 {

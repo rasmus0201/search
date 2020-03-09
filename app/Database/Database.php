@@ -1,16 +1,16 @@
 <?php
 
-namespace Search\Support;
+namespace App\Database;
 
 use Search\Connectors\Traits\CanOpenConnections;
 use Search\Support\DatabaseConfig;
 
-class StaticDB
+class Database
 {
     use CanOpenConnections;
 
     /**
-     * @var StaticDB
+     * @var Database
      */
     private static $instance = null;
 
@@ -31,12 +31,14 @@ class StaticDB
         if (self::$instance === null)
         {
             $config = new DatabaseConfig();
+            $config->setDriver(getenv('DB_CONNECTION'));
             $config->setHost(getenv('DB_HOST'));
-            $config->setDatabase(getenv('DB_NAME'));
-            $config->setUsername(getenv('DB_USER'));
-            $config->setPassword(getenv('DB_PASS'));
+            $config->setPort(getenv('DB_PORT'));
+            $config->setDatabase(getenv('DB_DATABASE'));
+            $config->setUsername(getenv('DB_USERNAME'));
+            $config->setPassword(getenv('DB_PASSWORD'));
 
-            self::$instance = new StaticDB($config);
+            self::$instance = new Database($config);
         }
 
         return self::$instance;
