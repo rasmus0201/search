@@ -3,7 +3,8 @@
 use App\Database\Database;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
+use Search\Searching\Searcher;
+// use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
 use Search\Support\DatabaseConfig;
 
 $config = new DatabaseConfig();

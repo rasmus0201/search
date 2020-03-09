@@ -10,11 +10,15 @@ use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
+use Search\Support\Performance;
 
 class Searcher
 {
     const LIMIT_DOCUMENTS = 250000;
-    const SEARCH_MAX_TOKENS = 12;
+    const LOW_FREQ_CUTFOFF = 0.0025; // 0.25 %
+
+    const BM25_BOOST = 0.75;
+    const BM25_K1 = 1.2;
 
     private $config;
     private $normalizer;
@@ -25,9 +29,7 @@ class Searcher
     private $infoRepository;
     private $termIndexRepository;
 
-    private $memoryRealUsage = false;
-    private $memory;
-    private $timer;
+    private $performance;
 
     public function __construct(
         DatabaseConfig $config,
@@ -37,6 +39,8 @@ class Searcher
         $this->config = $config;
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
+
+        $this->performance = new Performance();
 
         $dbh = DB::create($this->config)->getConnection();
 
@@ -54,69 +58,53 @@ class Searcher
      */
     public function search($searchPhrase, $numOfResults = 25)
     {
-        $this->startStats();
+        $this->performance->start();
 
-        $keywords = $this->tokenizer->tokenize(
+        $searchWords = $this->tokenizer->tokenize(
             $this->normalizer->normalize($searchPhrase)
         );
 
-        $scores = [];
-
+        // Average amount of terms
         $averageDocumentLength = $this->infoRepository->getValueByKey('average_document_length');
 
-        $searchTerms = $this->termIndexRepository->getByKeywords($this->filter(array_unique($keywords)));
-        $searchTerms = array_slice($searchTerms, 0, self::SEARCH_MAX_TOKENS);
+        // Is the total number of documents (docCount)
+        $totalDocuments = (int) $this->infoRepository->getValueByKey('total_documents');
 
-        $searchTermIds = array_unique(array_column($searchTerms, 'id'));
-        $searchTermsIdsById = array_flip($searchTermIds);
+        // Get only low frequency words
+        list($keywords) = $this->termIndexRepository->getLowFrequencyTerms(
+            $this->filter(array_unique($searchWords)),
+            $totalDocuments,
+            self::LOW_FREQ_CUTFOFF
+        );
 
-        $termInflections = $this->inflectionRepository->getByTermIds($this->filter(array_unique($searchTermIds)));
-        $inflectionTermIds = array_unique(array_column($termInflections, 'term_id'));
-        $inflectionTermIds = array_diff($inflectionTermIds, $searchTermIds);
-        $inflectionTermsIdsById = array_flip($searchTermIds);
-        $inflectionTerms = $this->termIndexRepository->getByIds($inflectionTermIds);
+        // Get possible inflections
+        $inflections = array_column(
+            $this->inflectionRepository->getByKeywords($searchWords),
+            'inflection'
+        );
 
-        // TODO - we still don't get the correct terms from inflections...
+        $queryTerms = $this->termIndexRepository->getByKeywords(
+            $this->filter(array_unique(array_merge($keywords, $inflections)))
+        );
 
-        $combinedTerms = array_merge($searchTerms, $inflectionTerms);
-        $combinedTermIds = array_unique(array_merge($searchTermIds, $inflectionTermIds));
+        $documents = $this->documentIndexRepository->getUniqueByTermIds(
+            array_unique(array_column($queryTerms, 'id')),
+            self::LIMIT_DOCUMENTS
+        );
 
-        $documents = $this->documentIndexRepository->getUniqueByTermIds($combinedTermIds, self::LIMIT_DOCUMENTS);
+        $terms = $this->termIndexRepository->getByIds(
+            array_unique(array_column($documents, 'term_id'))
+        );
 
-        $terms = $this->termIndexRepository->getByIds(array_unique(array_column($documents, 'term_id')));
         $termsById = $this->termsById($terms);
 
         $documents = $this->constructDocuments($documents);
 
-        // Should use document frequencies instead
-        // $termFrequencies = [];
-        // foreach ($searchTerms as $queryTerm) {
-        //     if (!isset($termFrequencies[$queryTerm['id']])) {
-        //         $termFrequencies[$queryTerm['id']] = 0;
-        //     }
-        //
-        //     $termFrequencies[$queryTerm['id']]++;
-        // }
-        //
-        // foreach ($inflectionTermIds as $inflectionTermId) {
-        //     if (!isset($termFrequencies[$inflectionTermId])) {
-        //         $termFrequencies[$inflectionTermId] = 0;
-        //     }
-        //
-        //     $termFrequencies[$inflectionTermId]++;
-        // }
-
         // IDF for search terms
-        $searchTermsIdf = $this->idf($searchTerms);
-
-        // b -> 0.75 (elasticsearch)
-        $b = 0.75;
-
-        // k1 -> 1.2 (elasticsearch)
-        $k1 = 1.2;
+        $queryTermsIdf = $this->idf($queryTerms);
 
         // Scores
-        $bm25 = [];
+        $scores = [];
 
         $multiplierMap = [
             'inflection' => 0.8,
@@ -125,65 +113,49 @@ class Searcher
 
         foreach ($documents as $documentId => $documentTerms) {
             $documentLength = count($documentTerms);
+            $termFrequencies = array_count_values(array_column($documentTerms, 'term_id'));
 
-            $termsTokens = [];
-            $termIds = [];
-            foreach ($documentTerms as $documentTerm) {
-                $termsTokens[] = $terms[$termsById[$documentTerm['term_id']]]['term'];
-                $termIds[] = $documentTerm['term_id'];
-            }
-            $termFrequencies = array_count_values($termIds);
-
-            $bm25[$documentId] = 0;
-            foreach ($searchTerms as $searchPosition => $queryTerm) {
+            $scores[$documentId] = 0;
+            foreach ($queryTerms as $searchPosition => $queryTerm) {
                 $termId = $queryTerm['id'];
-                $idf = $searchTermsIdf[$termId];
+                $idf = $queryTermsIdf[$termId];
 
                 $tf = $this->bm25TF(
-                    $k1,
-                    $b,
+                    self::BM25_K1,
+                    self::BM25_BOOST,
                     $termFrequencies[$termId] ?? 0,
                     $documentLength,
                     $averageDocumentLength
                 );
 
-                $type = isset($searchTermsIdsById[$termId]) ? 'exact' : 'inflection';
-
-                $bm25[$documentId] += ($idf * $tf) * $multiplierMap[$type];
+                $scores[$documentId] += ($idf * $tf);
             }
 
-            foreach ($documentTerms as $documentTerm) {
-                $termId = $documentTerm['term_id'];
-                $termPosition = $documentTerm['position'];
-                $term = $terms[$termsById[$termId]];
-
-                // TODO inflections
-                $infls = array_flip(array_column($termInflections, 'inflection'));
-                if (isset($infls[$term['term']])) {
-                    $bm25[$documentId] += ($multiplierMap['inflection'] * 5);
-                }
-
-                // Proximity scoring
-                // TODO Needs another algorithm
-                $proximity = $this->proximityScore(
-                    $term['term'],
-                    $termPosition,
-                    $keywords
-                );
-                $proximityScore = $documentLength - min(abs($proximity), ($documentLength + 1));
-
-                $bm25[$documentId] -= $proximityScore;
-            }
+            // TODO Needs another algorithm
+            // foreach ($documentTerms as $documentTerm) {
+            //     $termId = $documentTerm['term_id'];
+            //     $termPosition = $documentTerm['position'];
+            //     $term = $terms[$termsById[$termId]];
+            //
+            //     // Proximity scoring
+            //     $proximity = $this->proximityScore(
+            //         $term['term'],
+            //         $termPosition,
+            //         $keywords
+            //     );
+            //     $proximityScore = $documentLength - min(abs($proximity), ($documentLength + 1));
+            //
+            //     $scores[$documentId] -= $proximityScore;
+            // }
         }
 
-
-        $best = $this->getBestMatches($bm25, $numOfResults);
+        $best = $this->getBestMatches($scores, $numOfResults);
 
         return [
             'document_ids' => array_keys($best),
             'scores' => $best,
             'total_hits' => count($scores),
-            'stats' => $this->getStats(),
+            'stats' => $this->performance->get(),
         ];
     }
 
@@ -278,28 +250,5 @@ class Searcher
     private function filter(array $keywords)
     {
         return array_values(array_filter($keywords));
-    }
-
-    private function startStats()
-    {
-        $this->memory = memory_get_peak_usage($this->memoryRealUsage);
-        $this->timer = microtime(true);
-    }
-
-    private function getStats()
-    {
-        $time = microtime(true) - $this->timer;
-        $memory = memory_get_peak_usage($this->memoryRealUsage) - $this->memory;
-
-        return [
-            'raw' => [
-                'execution_time' => $time,
-                'memory_usage' => $memory,
-            ],
-            'formatted' => [
-                'execution_time' => round($time, 7) * 1000 .' ms',
-                'memory_usage' => round(($memory / 1024 / 1024), 2) . 'MiB',
-            ],
-        ];
     }
 }

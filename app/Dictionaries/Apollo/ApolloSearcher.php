@@ -11,6 +11,7 @@ use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
+use Search\Support\Performance;
 
 class ApolloSearcher
 {
@@ -36,9 +37,7 @@ class ApolloSearcher
     private $infoRepository;
     private $termIndexRepository;
 
-    private $memoryRealUsage = true;
-    private $memory;
-    private $timer;
+    private $performance;
 
     public function __construct(
         DatabaseConfig $config,
@@ -48,6 +47,8 @@ class ApolloSearcher
         $this->config = $config;
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
+
+        $this->performance = new Performance;
 
         $dbh = DB::create($this->config)->getConnection();
 
@@ -59,9 +60,11 @@ class ApolloSearcher
 
     public function search($searchPhrase, $numOfResults = 25)
     {
-        $this->startStats();
+        $this->performance->start();
 
-        $searchWords = $this->splitPhrase($searchPhrase);
+        $searchWords = $this->tokenizer->tokenize(
+            $this->normalizer->normalize($searchPhrase)
+        );
 
         // Is the total number of documents (docCount)
         $totalDocuments = (int) $this->infoRepository->getValueByKey('total_documents');
@@ -93,7 +96,7 @@ class ApolloSearcher
             'document_ids' => array_keys($result),
             'scores' => $result,
             'total_hits' => count($result),
-            'stats' => $this->getStats(),
+            'stats' => $this->performance->get(),
         ];
     }
 
@@ -205,53 +208,8 @@ class ApolloSearcher
         return array_slice($result, 0, min($scoreLimit, $limit), true);
     }
 
-    private function splitPhrase($phrase)
-    {
-        return $this->splitWords($this->stripSymbols(mb_strtolower($phrase)));
-    }
-
-    private function stripSymbols($string)
-    {
-        $search = [
-            "'", 'ˈ', '‘', '’', '′',
-            '"', '“', '”', '″',
-            '²', '³', '°',
-            '.', '!', '?', '…',
-            '(', ')', '[', ']',
-        ];
-        return trim(str_replace($search, '', $string));
-    }
-
-    private function splitWords($string)
-    {
-        return preg_split('/[ ,\\/]+/', $string);
-    }
-
     private function filter(array $keywords)
     {
         return array_values(array_filter($keywords));
-    }
-
-    private function startStats()
-    {
-        $this->memory = memory_get_peak_usage($this->memoryRealUsage);
-        $this->timer = microtime(true);
-    }
-
-    private function getStats()
-    {
-        $time = microtime(true) - $this->timer;
-        $memory = memory_get_peak_usage($this->memoryRealUsage) - $this->memory;
-
-        return [
-            'raw' => [
-                'execution_time' => $time,
-                'memory_usage' => $memory,
-            ],
-            'formatted' => [
-                'execution_time' => round($time, 7) * 1000 .' ms',
-                'memory_usage' => round(($memory / 1024 / 1024), 2) . 'MiB',
-            ],
-        ];
     }
 }
