@@ -3,7 +3,7 @@
 namespace Search\Connectors;
 
 use PDO;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 abstract class AbstractConnector
 {
@@ -25,11 +25,11 @@ abstract class AbstractConnector
      * Create a new PDO connection.
      *
      * @param string $dsn
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @param mixed[] $options
      * @return \PDO
      */
-    public function createConnection($dsn, Config $config, array $options)
+    public function createConnection($dsn, DatabaseConfig $config, array $options)
     {
         return new PDO(
             $dsn,
@@ -63,10 +63,10 @@ abstract class AbstractConnector
     /**
      * Get the PDO options based on the configuration.
      *
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return mixed[]
      */
-    public function getOptions(Config $config)
+    public function getOptions(DatabaseConfig $config)
     {
         $options = $this->options;
 

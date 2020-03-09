@@ -2,11 +2,11 @@
 
 namespace Search\Import;
 
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 interface FileImporterInterface
 {
     public function __construct($filePath, $directionId);
-    public function setConnection(Config $config);
+    public function setConnection(DatabaseConfig $config);
     public function import($toTableName);
 }

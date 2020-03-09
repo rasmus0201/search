@@ -14,7 +14,7 @@ use Search\Repositories\DocumentIndexRepository;
 use Search\Repositories\InflectionRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\TermIndexRepository;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 class Indexer
 {
@@ -35,7 +35,7 @@ class Indexer
     private $commitLimit = 25000;
 
     public function __construct(
-        Config $config,
+        DatabaseConfig $config,
         IndexTransformerInterface $transformer,
         NormalizerInterface $normalizer,
         TokenizerInterface $tokenizer

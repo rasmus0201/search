@@ -3,7 +3,7 @@
 namespace Search\Support;
 
 use Search\Connectors\Traits\CanOpenConnections;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 class StaticDB
 {
@@ -19,18 +19,18 @@ class StaticDB
      */
     private $dbh;
 
-    private function __construct(Config $config)
+    private function __construct(DatabaseConfig $config)
     {
         $this->dbh = $this->createDatabaseHandle($config);
     }
 
     private function __clone() {}
 
-    public static function instance(Config $config = null)
+    public static function instance(DatabaseConfig $config = null)
     {
         if (self::$instance === null)
         {
-            $config = new Config();
+            $config = new DatabaseConfig();
             $config->setHost(getenv('DB_HOST'));
             $config->setDatabase(getenv('DB_NAME'));
             $config->setUsername(getenv('DB_USER'));

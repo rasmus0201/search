@@ -6,9 +6,9 @@ use Apollo\Import\EntryImporter;
 use Apollo\Import\EntryLinker;
 use Apollo\Import\InflectionLinker;
 use Apollo\Import\LemmaImporter;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
-$config = new Config();
+$config = new DatabaseConfig();
 $config->setHost('localhost');
 $config->setDatabase('search');
 $config->setUsername('root');

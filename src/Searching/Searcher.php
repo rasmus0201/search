@@ -9,7 +9,7 @@ use Search\Repositories\DocumentIndexRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 class Searcher
 {
@@ -32,7 +32,7 @@ class Searcher
     private $timer;
 
     public function __construct(
-        Config $config,
+        DatabaseConfig $config,
         NormalizerInterface $normalizer,
         TokenizerInterface $tokenizer
     ) {

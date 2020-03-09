@@ -4,7 +4,7 @@ require __DIR__ . '/../run.php';
 
 use Apollo\DocumentTransformer as ApolloDocumentTransformer;
 use Search\Indexing\Indexer;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 use Search\Support\StaticDB;
 
 StaticDB::run("DROP TABLE IF EXISTS info");
@@ -13,7 +13,7 @@ StaticDB::run("DROP TABLE IF EXISTS inflections");
 StaticDB::run("DROP TABLE IF EXISTS term_index");
 StaticDB::run("DROP TABLE IF EXISTS document_index");
 
-$config = new Config();
+$config = new DatabaseConfig();
 $config->setHost('localhost');
 $config->setDatabase('search');
 $config->setUsername('root');

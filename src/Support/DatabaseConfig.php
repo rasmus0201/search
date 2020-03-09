@@ -2,10 +2,10 @@
 
 namespace Search\Support;
 
-class Config
+class DatabaseConfig
 {
     private $charset = 'utf8mb4';
-    private $collation; // utf8_unicode_ci
+    private $collation;
     private $database;
     private $driver = 'mysql';
     private $host = 'localhost';

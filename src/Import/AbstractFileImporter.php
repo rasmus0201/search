@@ -3,7 +3,7 @@
 namespace Search\Import;
 
 use Search\Import\Traits\CanInsertMultipleValuesMysql;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 
 abstract class AbstractFileImporter
@@ -40,7 +40,7 @@ abstract class AbstractFileImporter
         fclose($this->handle);
     }
 
-    public function setConnection(Config $config)
+    public function setConnection(DatabaseConfig $config)
     {
         $this->dbh = (new DB($config))->getConnection();
     }

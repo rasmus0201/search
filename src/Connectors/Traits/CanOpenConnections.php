@@ -4,18 +4,18 @@ namespace Search\Connectors\Traits;
 
 use Search\Connectors\MySqlConnector;
 use Search\Connectors\SQLiteConnector;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 trait CanOpenConnections
 {
-    private function createDatabaseHandle(Config $config)
+    private function createDatabaseHandle(DatabaseConfig $config)
     {
         $connector = $this->createConnector($config);
 
         return $connector->connect($config);
     }
 
-    private function createConnector(Config $config)
+    private function createConnector(DatabaseConfig $config)
     {
         $map = [
             'mysql' => MySqlConnector::class,

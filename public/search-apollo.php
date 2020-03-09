@@ -4,9 +4,9 @@ use Search\Support\StaticDB;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
 use Apollo\ApolloSearcher as Searcher;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
-$config = new Config();
+$config = new DatabaseConfig();
 $config->setHost('localhost');
 $config->setDatabase('search');
 $config->setUsername('root');

@@ -3,7 +3,7 @@
 namespace Apollo\Import;
 
 use PDO;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 
 class EntryLinker
@@ -12,12 +12,12 @@ class EntryLinker
 
     private $dbh;
 
-    public function __construct(Config $config)
+    public function __construct(DatabaseConfig $config)
     {
         $this->setConnection($config);
     }
 
-    public function setConnection(Config $config)
+    public function setConnection(DatabaseConfig $config)
     {
         $this->dbh = (new DB($config))->getConnection();
     }

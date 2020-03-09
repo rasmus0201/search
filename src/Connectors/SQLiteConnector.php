@@ -3,7 +3,7 @@
 namespace Search\Connectors;
 
 use Exception;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 class SQLiteConnector extends AbstractConnector implements ConnectorInterface
 {
@@ -12,7 +12,7 @@ class SQLiteConnector extends AbstractConnector implements ConnectorInterface
      *
      * @throws \InvalidArgumentException
      */
-    public function connect(Config $config)
+    public function connect(DatabaseConfig $config)
     {
         $this->setDefaultOptions([]);
         $options = $this->getOptions($config);

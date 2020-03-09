@@ -6,7 +6,7 @@ use PDO;
 use Search\Import\XmlHelper;
 use Search\Import\Traits\CanInsertMultipleValuesMysql;
 use Search\Import\DatabaseImporterInterface;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 
 class EntryImporter implements DatabaseImporterInterface
@@ -21,12 +21,12 @@ class EntryImporter implements DatabaseImporterInterface
         'enda-rød' => 9,
     ];
 
-    public function __construct(Config $config)
+    public function __construct(DatabaseConfig $config)
     {
         $this->setConnection($config);
     }
 
-    public function setConnection(Config $config)
+    public function setConnection(DatabaseConfig $config)
     {
         $this->dbh = (new DB($config))->getConnection();
     }

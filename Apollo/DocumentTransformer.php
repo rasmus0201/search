@@ -6,7 +6,7 @@ use PDO;
 use Search\Connectors\Traits\CanOpenConnections;
 use Search\Indexing\Document;
 use Search\Indexing\IndexTransformerInterface;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 class DocumentTransformer implements IndexTransformerInterface
 {
@@ -14,7 +14,7 @@ class DocumentTransformer implements IndexTransformerInterface
 
     private $dbh;
 
-    public function __construct(Config $config)
+    public function __construct(DatabaseConfig $config)
     {
         $this->dbh = $this->createDatabaseHandle($config);
     }

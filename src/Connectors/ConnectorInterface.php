@@ -2,15 +2,15 @@
 
 namespace Search\Connectors;
 
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 interface ConnectorInterface
 {
     /**
      * Establish a database connection.
      *
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return \PDO
      */
-    public function connect(Config $config);
+    public function connect(DatabaseConfig $config);
 }

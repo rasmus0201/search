@@ -3,7 +3,7 @@
 require __DIR__ . '/../run.php';
 
 use Search\Import\Dictcc\Importer;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 $imports = [
     [
@@ -32,7 +32,7 @@ $imports = [
     ],
 ];
 
-$config = new Config();
+$config = new DatabaseConfig();
 $config->setHost('localhost');
 $config->setDatabase('search');
 $config->setUsername('root');

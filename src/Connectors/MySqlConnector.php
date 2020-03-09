@@ -3,14 +3,14 @@
 namespace Search\Connectors;
 
 use PDO;
-use Search\Support\Config;
+use Search\Support\DatabaseConfig;
 
 class MySqlConnector extends AbstractConnector implements ConnectorInterface
 {
     /**
      * @inheritdoc
      */
-    public function connect(Config $config)
+    public function connect(DatabaseConfig $config)
     {
         $dsn = $this->getDsn($config);
         $options = $this->getOptions($config);
@@ -50,10 +50,10 @@ class MySqlConnector extends AbstractConnector implements ConnectorInterface
      *
      * Chooses socket or host/port based on the 'unix_socket' config value.
      *
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return string
      */
-    private function getDsn(Config $config)
+    private function getDsn(DatabaseConfig $config)
     {
         return $this->configHasSocket($config) ? $this->getSocketDsn($config) : $this->getHostDsn($config);
     }
@@ -61,10 +61,10 @@ class MySqlConnector extends AbstractConnector implements ConnectorInterface
     /**
      * Determine if the given configuration array has a UNIX socket value.
      *
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return bool
      */
-    private function configHasSocket(Config $config)
+    private function configHasSocket(DatabaseConfig $config)
     {
         return $config->getSocket() !== false && trim($config->getSocket()) !== '';
     }
@@ -72,10 +72,10 @@ class MySqlConnector extends AbstractConnector implements ConnectorInterface
     /**
      * Get the DSN string for a socket configuration.
      *
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return string
      */
-    private function getSocketDsn(Config $config)
+    private function getSocketDsn(DatabaseConfig $config)
     {
         return "mysql:unix_socket={$config->getsocket()};dbname={$config->getDatabase()}";
     }
@@ -83,10 +83,10 @@ class MySqlConnector extends AbstractConnector implements ConnectorInterface
     /**
      * Get the DSN string for a host / port configuration.
      *
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return string
      */
-    private function getHostDsn(Config $config)
+    private function getHostDsn(DatabaseConfig $config)
     {
         if ($port = $config->getPort()) {
             return "mysql:host={$config->getHost()};port={$port};dbname={$config->getDatabase()}";
@@ -99,10 +99,10 @@ class MySqlConnector extends AbstractConnector implements ConnectorInterface
      * Set the modes for the connection.
      *
      * @param \PDO $connection
-     * @param Config $config
+     * @param DatabaseConfig $config
      * @return void
      */
-    private function setModes(PDO $connection, Config $config)
+    private function setModes(PDO $connection, DatabaseConfig $config)
     {
         if ($modes = $config->getModes()) {
             $modes = implode(',', $modes);
