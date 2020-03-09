@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../run.php';
+require __DIR__ . '/../../run.php';
 
 use Dictionaries\Apollo\Import\EntryImporter;
 use Dictionaries\Apollo\Import\EntryLinker;

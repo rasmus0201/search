@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../run.php';
+require __DIR__ . '/../../run.php';
 
 use Dictionaries\Dictcc\Import\Importer;
 use Search\Support\DatabaseConfig;

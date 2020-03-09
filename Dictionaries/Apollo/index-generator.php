@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../run.php';
+require __DIR__ . '/../../run.php';
 
 use Dictionaries\Apollo\DocumentTransformer as ApolloDocumentTransformer;
 use Search\Indexing\Indexer;
