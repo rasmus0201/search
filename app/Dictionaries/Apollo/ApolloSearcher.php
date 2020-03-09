@@ -23,7 +23,6 @@ class ApolloSearcher
 
     const EXACT_SCORE = 20;
     const INFLECTION_SCORE = 16;
-    const NOT_QUERY_TERM_SCORE = 4;
     const PROXIMITY_SCORE = 1;
     const IS_LEMMA_MULTIPLIER = 1.3;
     const IS_REPEATED_MULTIPLIER = 0.5;

@@ -1,143 +1,112 @@
-<?php
-
-use App\Database\Database;
-use Search\DefaultNormalizer;
-use Search\DefaultTokenizer;
-use Search\Searching\Searcher;
-// use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
-use Search\Support\DatabaseConfig;
-
-$config = new DatabaseConfig();
-$config->setHost('localhost');
-$config->setDatabase('search');
-$config->setUsername('root');
-$config->setPassword('');
-
-$searcher = new Searcher(
-    $config,
-    new DefaultNormalizer(),
-    new DefaultTokenizer()
-);
-
-$res = [
-    'document_ids' => [],
-    'scores' => [],
-    'stats' => [
-        'raw' => [
-            'execution_time' => 0,
-            'memory_usage' => 0,
-        ],
-        'formatted' => [
-            'execution_time' => 'No search time',
-            'memory_usage' => '',
-        ],
-    ]
-];
-$dicts = [];
-
-if (isset($_GET['q'])) {
-    $res = $searcher->search(trim($_GET['q']), 50);
-}
-
-if (count($res['document_ids'])) {
-    $ids = implode(', ', $res['document_ids']);
-
-    $stmt = Database::run("
-        SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name FROM entries e
-
-        INNER JOIN directions dir ON dir.id = e.direction_id
-        INNER JOIN dictionaries dict ON dict.id = dir.dictionary_id
-        INNER JOIN raw_entries re ON e.raw_entry_id = re.id
-
-        WHERE e.`id` IN ($ids)
-        ORDER BY FIELD(e.`id`, $ids)
-    ");
-
-    while ($entry = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        if (!isset($dicts[$entry['dict_id']])) {
-            $dicts[$entry['dict_id']] = [
-                'dict_name' => $entry['dict_name'],
-                'entries' => [$entry]
-            ];
-
-            continue;
-        }
-
-        $dicts[$entry['dict_id']]['entries'][] = $entry;
-    }
-}
-
-?>
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
     <head>
         <meta charset="utf-8">
         <title>Search</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/styles/vs.min.css">
-        <style media="screen">
-            .result h3 {
-                margin-bottom: 0;
-            }
-
-            .result {
-                margin-bottom: 10px;
-                padding: 8px;
-                background: #fafafa;
-            }
-
-            .result .xml {
-                background: #fafafa;
-            }
-        </style>
+        <link rel="stylesheet" href="main.css">
     </head>
     <body>
-        <form  method="get">
-            <input type="search" style="width: 500px; padding: 5px;" name="q" value="<?php echo $_GET['q'] ?? ''; ?>">
-            <input type="button" name="submit" value="Søg...">
-        </form>
-        <p>
-            <span>Search took: <?php echo $res['stats']['formatted']['execution_time']; ?></span>
-            <br>
-            <span>Results: <?php echo count($res['document_ids']); ?></span>
-            <br>
-            <span>Memory usage: <?php echo $res['stats']['formatted']['memory_usage']; ?></span>
-        </p>
-        <?php if (empty($dicts)): ?>
-            <p>No results.</p>
-        <?php endif; ?>
-        <?php foreach ($dicts as $dict): ?>
-            <h2><?php echo $dict['dict_name']; ?></h2>
-
-            <?php foreach ($dict['entries'] as $entry): ?>
-                <div class="result">
-                    <h3><?php echo $entry['headword']; ?></h3>
-                    <small>EntryId: <?php echo $entry['id']; ?></small>
-                    <small>Score: <?php echo round($res['scores'][$entry['id']], 3); ?></small>
-                    <?php
-                        $dom = new DOMDocument('1.0', 'utf-8');
-                        $dom->preserveWhiteSpace = false;
-                        $dom->formatOutput = true;
-                        $dom->loadXML($entry['data']);
-                        $formatxml = new SimpleXMLElement($dom->saveXML());
-
-                        $xml = $formatxml->saveXML();
-                    ?>
-                    <pre class="xml"><?php echo $xml; ?></pre>
+        <div id="app">
+            <div class="grid">
+                <div class="grid__item settings">
+                    <h3 class="settings__title">Settings</h3>
+                    <fieldset>
+                        <legend>Globals:</legend>
+                        <label>
+                            Search results:
+                            <input type="number" min="1" value="20" step="1">
+                        </label>
+                        <label>
+                            Use inflections:
+                            <input type="checkbox" checked>
+                        </label>
+                        <label>
+                            Low freq terms cutoff:
+                            <input type="number" min="0.0001" max="1" value="0.0025" step="0.1">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Default algorithm:</legend>
+                        <label>
+                            Exact score:
+                            <input type="number" min="0" value="20" step="0.1">
+                        </label>
+                        <label>
+                            Inflection score:
+                            <input type="number" min="0" value="16" step="0.1">
+                        </label>
+                        <label>
+                            Proximity score:
+                            <input type="number" min="0" value="1" step="0.1">
+                        </label>
+                        <label>
+                            Lemma multiplier:
+                            <input type="number" min="0" value="1.3" step="0.1">
+                        </label>
+                        <label>
+                            Repeated lemma multiplier:
+                            <input type="number" min="0" value="0.5" step="0.1">
+                        </label>
+                        <label>
+                            Result cutoff multiplier:
+                            <input type="number" min="0" max="100" value="0.4" step="0.1">
+                        </label>
+                        <label>
+                            Max duplicate scores:
+                            <input type="number" min="0" max="100" value="5" step="1">
+                        </label>
+                    </fieldset>
+                    <fieldset>
+                        <legend>BM25 (+TF)</legend>
+                        <label>
+                            Max query documents (b):
+                            <input type="number" min="1" value="50000" step="1">
+                        </label>
+                        <label>
+                            BM25 Boost (b):
+                            <input type="number" min="0" max="100" value="0.75" step="0.01">
+                        </label>
+                        <label>
+                            BM25 K1 (k<sub>1<sub>):
+                            <input type="number" min="0" max="100" value="1.2" step="0.01">
+                        </label>
+                    </fieldset>
                 </div>
-            <?php endforeach; ?>
-        <?php endforeach; ?>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/8.4/highlight.min.js"></script>
-        <script>
-            (function() {
-                var highlights = document.querySelectorAll('.xml');
+                <div class="grid__item search-field">
+                    <form @submit.prevent="search">
+                        <input v-model="input" type="search" placeholder="E.g. Cutting corners" class="search-field__input">
+                        <button type="submit" class="search-field__button">
+                            Search...
+                        </button>
+                    </form>
+                </div>
+                <div class="grid__item search-results">
+                    <div class="message">
+                        <p>
+                            <span>Search hits: {{ result.total_hits }}</span>
+                            <br>
+                            <span>Search took: {{ result.stats.formatted.execution_time }}</span>
+                            <br>
+                            <span>Memory usage: {{ result.stats.formatted.memory_usage }}</span>
+                        </p>
+                    </div>
+                    <div class="search-results__items" v-for="(dict, dIndex) in result.dictionaries" :key="'dict-'+dIndex">
+                        <h2>{{ dict.dict_name }}</h2>
 
-                for (const hightlight of highlights) {
-                    esc = _.escape(hightlight.innerHTML);
-                    hightlight.innerHTML = esc;
-                    hljs.highlightBlock(hightlight);
-                }
-            })();
-        </script>
+                        <div class="search-results__item" v-for="(item, index) in dict.entries" :key="'item-'+index">
+                            <h3>{{ item.headword }}</h3>
+                            <small>EntryId: {{ item.id }}</small>
+                            <small>Score: {{ item.score }}</small>
+                            <pre class="prettyprint lang-xml" v-text="item.data"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/gh/google/code-prettify@master/loader/run_prettify.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="main.js"></script>
     </body>
 </html>

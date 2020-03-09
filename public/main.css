@@ -1,0 +1,126 @@
+html,
+body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+}
+
+.grid {
+    display: grid;
+    height: 100%;
+    grid-template-columns: 300px auto;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+        "settings field"
+        "settings results";
+    grid-column-gap: 5px;
+    grid-row-gap: 5px;
+}
+
+.grid__item {
+    padding: 0.5rem;
+    background-color: #fafafa;
+}
+
+.settings {
+    grid-area: settings;
+}
+
+.settings__title {
+    margin-top: 0.25rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #34495e;
+}
+
+.settings fieldset {
+    margin-bottom: 1rem;
+}
+.settings label {
+    display: block;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.search-field {
+    grid-area: field;
+}
+
+.search-field__input,
+.search-field__button {
+    margin: 0;
+    padding: 6px 8px;
+    font-size: 1rem;
+    border: 1px solid #34495e;
+    -webkit-appearance: none;
+}
+
+.search-field__input {
+    width: calc(80% - 10px);
+    margin-right: 5px;
+}
+
+.search-field__button {
+    width: 20%;
+}
+
+.search-field__button:hover,
+.search-field__button:focus,
+.search-field__button:active {
+    cursor: pointer;
+    background-color: #34495e;
+    color: #fff;
+}
+
+.search-results {
+    grid-area: results;
+}
+
+.search-results__items {
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #000;
+}
+
+.message,
+.search-results__item {
+    background-color: #ecf0f1;
+    padding: 0.25rem;
+    margin: 0.5rem 0;
+}
+
+.message {
+    margin-top: 0;
+}
+
+.message p {
+    margin: 0;
+}
+
+.search-results__item h3 {
+    margin: 0.25rem 0;
+}
+
+.search-results__item small {
+    display: block;
+}
+
+.search-results__item pre {
+    max-width: calc(100vw - 330px);
+    max-height: 200px;
+    font-size: 0.75rem;
+    overflow: scroll;
+    margin-bottom: 0;
+}
