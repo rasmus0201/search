@@ -14,6 +14,13 @@
                     <fieldset>
                         <legend>Globals:</legend>
                         <label>
+                            Search algorithm:
+                            <select>
+                                <option value="default" selected>Default</option>
+                                <option value="bm25">BM25</option>
+                            </select>
+                        </label>
+                        <label>
                             Search results:
                             <input type="number" min="1" value="20" step="1">
                         </label>

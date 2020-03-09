@@ -3,8 +3,8 @@
 use App\Database\Database;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Search\Searching\Searcher;
-// use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
+// use Search\Searching\Searcher;
+use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
 use Search\Support\DatabaseConfig;
 
 $res = [
@@ -51,7 +51,7 @@ $searcher = new Searcher(
 );
 
 $dicts = [];
-$res = $searcher->search(trim($request['q']), 50);
+$res = $searcher->search(trim($request['q']), 10);
 
 if (count($res['document_ids'])) {
     $ids = implode(', ', $res['document_ids']);
