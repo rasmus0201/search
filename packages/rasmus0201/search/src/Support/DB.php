@@ -19,6 +19,11 @@ class DB
         $this->dbh = $this->createDatabaseHandle($config);
     }
 
+    public static function create(DatabaseConfig $config)
+    {
+        return new self($config);
+    }
+
     public function getConnection()
     {
         return $this->dbh;

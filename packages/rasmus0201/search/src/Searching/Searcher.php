@@ -2,7 +2,6 @@
 
 namespace Search\Searching;
 
-use Search\Connectors\Traits\CanOpenConnections;
 use Search\NormalizerInterface;
 use Search\TokenizerInterface;
 use Search\Repositories\DocumentIndexRepository;
@@ -10,11 +9,10 @@ use Search\Repositories\InfoRepository;
 use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\DatabaseConfig;
+use Search\Support\DB;
 
 class Searcher
 {
-    use CanOpenConnections;
-
     const LIMIT_DOCUMENTS = 250000;
     const SEARCH_MAX_TOKENS = 12;
 
@@ -40,12 +38,12 @@ class Searcher
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
 
-        $this->dbh = $this->createDatabaseHandle($this->config);
+        $dbh = DB::create($this->config)->getConnection();
 
-        $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
-        $this->inflectionRepository = new InflectionRepository($this->dbh);
-        $this->infoRepository = new InfoRepository($this->dbh);
-        $this->termIndexRepository = new TermIndexRepository($this->dbh);
+        $this->documentIndexRepository = new DocumentIndexRepository($dbh);
+        $this->inflectionRepository = new InflectionRepository($dbh);
+        $this->infoRepository = new InfoRepository($dbh);
+        $this->termIndexRepository = new TermIndexRepository($dbh);
     }
 
     /**

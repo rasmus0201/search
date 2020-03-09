@@ -3,10 +3,10 @@
 namespace App\Dictionaries\Apollo;
 
 use PDO;
-use Search\Connectors\Traits\CanOpenConnections;
 use Search\Indexing\Document;
 use Search\Indexing\IndexTransformerInterface;
 use Search\Support\DatabaseConfig;
+use Search\Support\DB;
 
 class DocumentTransformer implements IndexTransformerInterface
 {
@@ -16,7 +16,7 @@ class DocumentTransformer implements IndexTransformerInterface
 
     public function __construct(DatabaseConfig $config)
     {
-        $this->dbh = $this->createDatabaseHandle($config);
+        $this->dbh = DB::create($config)->getConnection();
     }
 
     public function transform(array $row) : Document

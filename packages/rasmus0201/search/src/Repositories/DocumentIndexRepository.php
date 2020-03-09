@@ -111,7 +111,7 @@ class DocumentIndexRepository extends AbstractRepository
 
                 INNER JOIN term_index ti ON ti.id = di.term_id
 
-                WHERE BINARY ti.`term` IN (".$placeholders.")
+                WHERE ti.`term` IN (".$placeholders.")
 
                 GROUP BY di.`document_id`
             ) t ON t.document_id = di.document_id

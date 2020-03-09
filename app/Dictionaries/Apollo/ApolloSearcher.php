@@ -3,7 +3,6 @@
 namespace App\Dictionaries\Apollo;
 
 use Generator;
-use Search\Connectors\Traits\CanOpenConnections;
 use Search\NormalizerInterface;
 use Search\TokenizerInterface;
 use Search\Repositories\DocumentIndexRepository;
@@ -11,11 +10,10 @@ use Search\Repositories\InfoRepository;
 use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\DatabaseConfig;
+use Search\Support\DB;
 
 class ApolloSearcher
 {
-    use CanOpenConnections;
-
     const USE_INFLECTIONS = true;
     const LOW_FREQ_CUTFOFF = 0.0025; // 0.25 %
 
@@ -51,12 +49,12 @@ class ApolloSearcher
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
 
-        $this->dbh = $this->createDatabaseHandle($this->config);
+        $dbh = DB::create($this->config)->getConnection();
 
-        $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
-        $this->inflectionRepository = new InflectionRepository($this->dbh);
-        $this->infoRepository = new InfoRepository($this->dbh);
-        $this->termIndexRepository = new TermIndexRepository($this->dbh);
+        $this->documentIndexRepository = new DocumentIndexRepository($dbh);
+        $this->inflectionRepository = new InflectionRepository($dbh);
+        $this->infoRepository = new InfoRepository($dbh);
+        $this->termIndexRepository = new TermIndexRepository($dbh);
     }
 
     public function search($searchPhrase, $numOfResults = 25)

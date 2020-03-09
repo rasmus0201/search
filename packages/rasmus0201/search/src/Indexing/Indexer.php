@@ -4,7 +4,6 @@ namespace Search\Indexing;
 
 use Exception;
 use PDO;
-use Search\Connectors\Traits\CanOpenConnections;
 use Search\Indexing\Document;
 use Search\Indexing\IndexTransformerInterface;
 use Search\Indexing\Term;
@@ -15,11 +14,10 @@ use Search\Repositories\InflectionRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\TermIndexRepository;
 use Search\Support\DatabaseConfig;
+use Search\Support\DB;
 
 class Indexer
 {
-    use CanOpenConnections;
-
     private $config;
     private $transformer;
     private $normalizer;
@@ -45,7 +43,7 @@ class Indexer
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
 
-        $this->dbh = $this->createDatabaseHandle($this->config);
+        $this->dbh = DB::create($this->config)->getConnection();
 
         $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
         $this->inflectionRepository = new InflectionRepository($this->dbh);
@@ -55,8 +53,9 @@ class Indexer
 
     public function setQuery($query, array $params = [])
     {
-        $db = $this->createDatabaseHandle($this->config);
-        $stmt = $db->prepare($query);
+        // Create new DB to not confuse when multiple statements are "open".
+        $queryDB = DB::create($this->config)->getConnection();
+        $stmt = $queryDB->prepare($query);
 
         foreach ($params as $param => $value) {
             $stmt->bindValue(':'.$param, $value, (ctype_digit($value) ? (PDO::PARAM_INT) : PDO::PARAM_STR));
