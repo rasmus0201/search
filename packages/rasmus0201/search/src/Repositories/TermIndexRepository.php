@@ -101,7 +101,6 @@ class TermIndexRepository extends AbstractRepository
             $params[':o' . $key] = $value;
         }
 
-        // TODO Should BINARY be used in where?
         $stmt = $this->dbh->prepare("
             SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs`
             FROM term_index i

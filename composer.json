@@ -11,8 +11,8 @@
     },
     "autoload": {
         "psr-4": {
-            "Search\\": "./src",
-            "Apollo\\": "./apollo",
+            "Search\\": "./packages/rasmus0201/search/src",
+            "Apollo\\": "./Apollo",
             "Dictcc\\": "./Dictcc"
         }
     }
