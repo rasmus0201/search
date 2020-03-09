@@ -3,7 +3,7 @@
 use Search\Support\StaticDB;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Apollo\ApolloSearcher as Searcher;
+use Dictionaries\Apollo\ApolloSearcher as Searcher;
 use Search\Support\DatabaseConfig;
 
 $config = new DatabaseConfig();

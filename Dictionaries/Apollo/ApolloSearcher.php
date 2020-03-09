@@ -1,6 +1,6 @@
 <?php
 
-namespace Apollo;
+namespace Dictionaries\Apollo;
 
 use Generator;
 use Search\Connectors\Traits\CanOpenConnections;

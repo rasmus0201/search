@@ -2,10 +2,10 @@
 
 require __DIR__ . '/../run.php';
 
-use Apollo\Import\EntryImporter;
-use Apollo\Import\EntryLinker;
-use Apollo\Import\InflectionLinker;
-use Apollo\Import\LemmaImporter;
+use Dictionaries\Apollo\Import\EntryImporter;
+use Dictionaries\Apollo\Import\EntryLinker;
+use Dictionaries\Apollo\Import\InflectionLinker;
+use Dictionaries\Apollo\Import\LemmaImporter;
 use Search\Support\DatabaseConfig;
 
 $config = new DatabaseConfig();

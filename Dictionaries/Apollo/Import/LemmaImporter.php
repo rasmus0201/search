@@ -1,6 +1,6 @@
 <?php
 
-namespace Apollo\Import;
+namespace Dictionaries\Apollo\Import;
 
 use PDO;
 use Search\Import\XmlHelper;

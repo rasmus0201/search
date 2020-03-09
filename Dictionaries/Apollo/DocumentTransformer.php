@@ -1,6 +1,6 @@
 <?php
 
-namespace Apollo;
+namespace Dictionaries\Apollo;
 
 use PDO;
 use Search\Connectors\Traits\CanOpenConnections;

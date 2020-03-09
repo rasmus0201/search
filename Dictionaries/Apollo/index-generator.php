@@ -2,16 +2,16 @@
 
 require __DIR__ . '/../run.php';
 
-use Apollo\DocumentTransformer as ApolloDocumentTransformer;
+use Dictionaries\Apollo\DocumentTransformer as ApolloDocumentTransformer;
 use Search\Indexing\Indexer;
 use Search\Support\DatabaseConfig;
 use Search\Support\StaticDB;
 
-StaticDB::run("DROP TABLE IF EXISTS info");
-StaticDB::run("DROP TABLE IF EXISTS term_has_inflections");
-StaticDB::run("DROP TABLE IF EXISTS inflections");
-StaticDB::run("DROP TABLE IF EXISTS term_index");
-StaticDB::run("DROP TABLE IF EXISTS document_index");
+// StaticDB::run("DROP TABLE IF EXISTS info");
+// StaticDB::run("DROP TABLE IF EXISTS term_has_inflections");
+// StaticDB::run("DROP TABLE IF EXISTS inflections");
+// StaticDB::run("DROP TABLE IF EXISTS term_index");
+// StaticDB::run("DROP TABLE IF EXISTS document_index");
 
 $config = new DatabaseConfig();
 $config->setHost('localhost');

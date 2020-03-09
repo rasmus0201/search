@@ -2,7 +2,7 @@
 
 require __DIR__ . '/../run.php';
 
-use Search\Import\Dictcc\Importer;
+use Dictionaries\Dictcc\Import\Importer;
 use Search\Support\DatabaseConfig;
 
 $imports = [
