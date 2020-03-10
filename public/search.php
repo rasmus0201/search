@@ -15,75 +15,75 @@
                         <legend>Globals:</legend>
                         <label>
                             Search algorithm:
-                            <select>
-                                <option value="default" selected>Default</option>
+                            <select v-bind:value="settings.global.algorithm" @change="settings.global.algorithm = $event.target.value">
+                                <option value="default">Default</option>
                                 <option value="bm25">BM25</option>
                             </select>
                         </label>
                         <label>
                             Search results:
-                            <input type="number" min="1" value="20" step="1">
+                            <input v-model="settings.global.search_results" type="number" min="1" step="1">
                         </label>
                         <label>
                             Use inflections:
-                            <input type="checkbox" checked>
+                            <input v-model="settings.global.use_inflections" type="checkbox">
                         </label>
                         <label>
                             Low freq terms cutoff:
-                            <input type="number" min="0.0001" max="1" value="0.0025" step="0.1">
+                            <input v-model="settings.global.low_freq_cutoff" type="number" min="0.0001" max="1" step="0.1">
                         </label>
                     </fieldset>
                     <fieldset>
                         <legend>Default algorithm:</legend>
                         <label>
                             Exact score:
-                            <input type="number" min="0" value="20" step="0.1">
+                            <input v-model="settings.default.exact_score" type="number" min="0" step="0.1">
                         </label>
                         <label>
                             Inflection score:
-                            <input type="number" min="0" value="16" step="0.1">
+                            <input v-model="settings.default.inflection_score" type="number" min="0" step="0.1">
                         </label>
                         <label>
                             Proximity score:
-                            <input type="number" min="0" value="1" step="0.1">
+                            <input v-model="settings.default.proximity_score" type="number" min="0" step="0.1">
                         </label>
                         <label>
                             Lemma multiplier:
-                            <input type="number" min="0" value="1.3" step="0.1">
+                            <input v-model="settings.default.is_lemma_multiplier" type="number" min="0" step="0.1">
                         </label>
                         <label>
                             Repeated lemma multiplier:
-                            <input type="number" min="0" value="0.5" step="0.1">
+                            <input v-model="settings.default.is_repeated_multiplier" type="number" min="0" step="0.1">
                         </label>
                         <label>
                             Result cutoff multiplier:
-                            <input type="number" min="0" max="100" value="0.4" step="0.1">
+                            <input v-model="settings.default.result_cutoff_multiplier" type="number" min="0" max="100" step="0.1">
                         </label>
                         <label>
                             Max duplicate scores:
-                            <input type="number" min="0" max="100" value="5" step="1">
+                            <input v-model="settings.default.max_duplicate_scores" type="number" min="0" max="100" step="1">
                         </label>
                     </fieldset>
                     <fieldset>
                         <legend>BM25 (+TF)</legend>
                         <label>
                             Max query documents (b):
-                            <input type="number" min="1" value="50000" step="1">
+                            <input v-model="settings.bm25.max_query_documents" type="number" min="1" step="1">
                         </label>
                         <label>
                             BM25 Boost (b):
-                            <input type="number" min="0" max="100" value="0.75" step="0.01">
+                            <input v-model="settings.bm25.b" type="number" min="0" max="100" step="0.01">
                         </label>
                         <label>
                             BM25 K1 (k<sub>1<sub>):
-                            <input type="number" min="0" max="100" value="1.2" step="0.01">
+                            <input v-model="settings.bm25.k1" type="number" min="0" max="100" step="0.01">
                         </label>
                     </fieldset>
                 </div>
                 <div class="grid__item search-field">
                     <form @submit.prevent="search">
-                        <input v-model="input" type="search" placeholder="E.g. Cutting corners" class="search-field__input">
-                        <button type="submit" class="search-field__button">
+                        <input :disabled="searching" v-model="input" type="search" placeholder="E.g. Cutting corners" class="search-field__input">
+                        <button :disabled="searching" type="submit" class="search-field__button">
                             Search...
                         </button>
                     </form>

@@ -75,6 +75,11 @@ body {
     width: 20%;
 }
 
+.search-field__input:disabled,
+.search-field__button:disabled {
+    background-color: #ccc;
+}
+
 .search-field__button:hover,
 .search-field__button:focus,
 .search-field__button:active {

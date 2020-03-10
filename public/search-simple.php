@@ -3,9 +3,9 @@
 use App\Database\Database;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-use Search\Searching\Searcher;
-// use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
+use Search\Searching\BM25;
 use Search\Support\DatabaseConfig;
+use Search\Support\SearchConfig;
 
 $config = new DatabaseConfig();
 $config->setHost('localhost');
@@ -13,14 +13,15 @@ $config->setDatabase('search');
 $config->setUsername('root');
 $config->setPassword('');
 
-$searcher = new Searcher(
+$searcher = new BM25(
     $config,
+    new SearchConfig(),
     new DefaultNormalizer(),
     new DefaultTokenizer()
 );
 
 $res = [
-    'document_ids' => [],
+    'ids' => [],
     'scores' => [],
     'stats' => [
         'raw' => [
@@ -36,11 +37,11 @@ $res = [
 $dicts = [];
 
 if (isset($_GET['q'])) {
-    $res = $searcher->search(trim($_GET['q']), 50);
+    $res = $searcher->search(trim($_GET['q']), 50)->get();
 }
 
-if (count($res['document_ids'])) {
-    $ids = implode(', ', $res['document_ids']);
+if (count($res['ids'])) {
+    $ids = implode(', ', $res['ids']);
 
     $stmt = Database::run("
         SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name FROM entries e
@@ -96,7 +97,7 @@ if (count($res['document_ids'])) {
         <p>
             <span>Search took: <?php echo $res['stats']['formatted']['execution_time']; ?></span>
             <br>
-            <span>Results: <?php echo count($res['document_ids']); ?></span>
+            <span>Results: <?php echo count($res['ids']); ?></span>
             <br>
             <span>Memory usage: <?php echo $res['stats']['formatted']['memory_usage']; ?></span>
         </p>

@@ -8,4 +8,6 @@ if (file_exists($root) && !in_array($_SERVER['DOCUMENT_URI'], ['/index.php', '/'
     require __DIR__ . $_SERVER['DOCUMENT_URI'];
     die;
 }
+
+require __DIR__ . '/search.php';
 ?>

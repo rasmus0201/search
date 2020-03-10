@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Dictionaries\Apollo;
+namespace Search\Searching;
 
 use Generator;
 use Search\NormalizerInterface;
@@ -9,11 +9,14 @@ use Search\Repositories\DocumentIndexRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
+use Search\Searching\SearchInterface;
+use Search\Searching\SearchResult;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 use Search\Support\Performance;
+use Search\Support\SearchConfig;
 
-class ApolloSearcher
+class DefaultSearcher implements SearchInterface
 {
     const USE_INFLECTIONS = true;
     const LOW_FREQ_CUTFOFF = 0.0025; // 0.25 %
@@ -27,7 +30,7 @@ class ApolloSearcher
     const IS_LEMMA_MULTIPLIER = 1.3;
     const IS_REPEATED_MULTIPLIER = 0.5;
 
-    private $config;
+    private $settings;
     private $normalizer;
     private $tokenizer;
 
@@ -40,16 +43,17 @@ class ApolloSearcher
 
     public function __construct(
         DatabaseConfig $config,
+        SearchConfig $settings,
         NormalizerInterface $normalizer,
         TokenizerInterface $tokenizer
     ) {
-        $this->config = $config;
+        $this->settings = $settings;
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
 
         $this->performance = new Performance;
 
-        $dbh = DB::create($this->config)->getConnection();
+        $dbh = DB::create($config)->getConnection();
 
         $this->documentIndexRepository = new DocumentIndexRepository($dbh);
         $this->inflectionRepository = new InflectionRepository($dbh);
@@ -57,7 +61,7 @@ class ApolloSearcher
         $this->termIndexRepository = new TermIndexRepository($dbh);
     }
 
-    public function search($searchPhrase, $numOfResults = 25)
+    public function search($searchPhrase, $numOfResults = 25) : SearchResult
     {
         $this->performance->start();
 
@@ -72,7 +76,7 @@ class ApolloSearcher
         list($searchWords, $terms) = $this->termIndexRepository->getLowFrequencyTerms(
             $this->filter(array_unique($searchWords)),
             $totalDocuments,
-            self::LOW_FREQ_CUTFOFF
+            $this->settings->get('global.low_freq_cutoff', self::LOW_FREQ_CUTFOFF)
         );
 
         $inflections = array_column(
@@ -82,21 +86,22 @@ class ApolloSearcher
 
         $queryWords = $this->filter(array_unique(array_merge($searchWords, $inflections)));
 
-        $result = $this->calcScores(
+        $scores = $this->calcScores(
             $this->documentIndexRepository->getLazyByTerms($queryWords),
             $this->filter(array_column($terms, 'id')),
             $inflections,
             $totalDocuments
         );
 
-        $result = $this->limitResults($result, $numOfResults);
+        $best = $this->limitResults($scores, $this->settings->get('global.search_results', $numOfResults));
 
-        return [
-            'document_ids' => array_keys($result),
-            'scores' => $result,
-            'total_hits' => count($result),
-            'stats' => $this->performance->get(),
-        ];
+        $results = new SearchResult();
+        $results->setIds(array_keys($best));
+        $results->setScores($best);
+        $results->setTotalHits(count($scores));
+        $results->setStats($this->performance->get());
+
+        return $results;
     }
 
     private function calcScores(Generator $rows, array $termIds, array $inflections, $totalDocuments)
@@ -115,12 +120,18 @@ class ApolloSearcher
         $score = 0;
         $lastPosition = 0;
 
+        $proximityScore = $this->settings->get('default.proximity_score', self::PROXIMITY_SCORE);
+        $isLemmaMultiplier = $this->settings->get('default.is_lemma_multiplier', self::IS_LEMMA_MULTIPLIER);
+        $isRepeatedMultiplier = $this->settings->get('default.is_repeated_multiplier', self::IS_REPEATED_MULTIPLIER);
+        $inflectionScore = $this->settings->get('default.inflection_score', self::INFLECTION_SCORE);
+        $exactScore = $this->settings->get('default.exact_score', self::EXACT_SCORE);
+
         foreach ($rows as $row) {
             if ($row['document_id'] != $currentArticle) {
                 if ($currentArticle) {
-                    $score -= $gapCount * self::PROXIMITY_SCORE;
+                    $score -= $gapCount * $proximityScore;
                     $score -= $phraseLength - $matchCount;
-                    $result[$currentArticle] = $isTermMatch ? ($score * self::IS_LEMMA_MULTIPLIER) : $score;
+                    $result[$currentArticle] = $isTermMatch ? ($score * $isLemmaMultiplier) : $score;
                 }
 
                 $currentArticle = $row['document_id'];
@@ -135,15 +146,14 @@ class ApolloSearcher
             }
 
             $wordScore = 0;
-
             if (isset($inflectionsById[$row['term_id']])) {
-                $wordScore = self::INFLECTION_SCORE;
+                $wordScore = $inflectionScore;
             } elseif (isset($termsByIds[$row['term_id']])) {
-                $wordScore = self::EXACT_SCORE;
+                $wordScore = $exactScore;
             }
 
             if (isset($usedWords[$row['term']])) {
-                $score += $wordScore * self::IS_REPEATED_MULTIPLIER;
+                $score += $wordScore * $isRepeatedMultiplier;
             } else {
                 $usedWords[$row['term']] = true;
                 $score += $wordScore;
@@ -155,9 +165,9 @@ class ApolloSearcher
 
         // This is needed to catch the last phrase
         if ($currentArticle) {
-            $score -= $gapCount * self::PROXIMITY_SCORE;
+            $score -= $gapCount * $proximityScore;
             $score -= $phraseLength - $matchCount;
-            $result[$currentArticle] = $isTermMatch ? ($score * self::IS_LEMMA_MULTIPLIER) : $score;
+            $result[$currentArticle] = $isTermMatch ? ($score * $isLemmaMultiplier) : $score;
         }
 
         arsort($result);
@@ -176,10 +186,12 @@ class ApolloSearcher
     private function limitResults(array $result, $limit)
     {
         $bestScore = reset($result);
-        $minScore = $bestScore * self::CUTOFF_MULTIPLIER;
+        $minScore = $bestScore * $this->settings->get('default.result_cutoff_multiplier', self::CUTOFF_MULTIPLIER);
         $lastScore = $bestScore;
         $scoreLimit = $limit;
         $i = 0;
+
+        $maxDuplicateScores = $this->settings->get('default.max_duplicate_scores', self::MAX_DUPLICATE);
 
         foreach ($result as $score) {
             if ($score < $minScore) {
@@ -190,7 +202,7 @@ class ApolloSearcher
             if ($score != $bestScore) {
                 $same = ($score == $lastScore ? $same + 1 : 1);
 
-                if ($same > self::MAX_DUPLICATE) {
+                if ($same > $maxDuplicateScores) {
                     $scoreLimit = $i;
                     break;
                 }

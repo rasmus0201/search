@@ -3,25 +3,9 @@
 use App\Database\Database;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
-// use Search\Searching\Searcher;
-use App\Dictionaries\Apollo\ApolloSearcher as Searcher;
+use Search\Searching\SearchResult;
 use Search\Support\DatabaseConfig;
-
-$res = [
-    'document_ids' => [],
-    'scores' => [],
-    'dictionaries' => [],
-    'stats' => [
-        'raw' => [
-            'execution_time' => 0,
-            'memory_usage' => 0,
-        ],
-        'formatted' => [
-            'execution_time' => '',
-            'memory_usage' => '',
-        ],
-    ],
-];
+use Search\Support\SearchConfig;
 
 $request = [];
 if ($_POST || $_GET || $_REQUEST) {
@@ -32,29 +16,34 @@ if (!$request) {
     $request = json_decode(file_get_contents("php://input"), true);
 }
 
-if (!isset($request['q'])) {
-    header('Content-Type: application/json');
-    echo json_encode($res);
-    die;
-}
-
 $config = new DatabaseConfig();
 $config->setHost('localhost');
 $config->setDatabase('search');
 $config->setUsername('root');
 $config->setPassword('');
 
-$searcher = new Searcher(
+$settings = new SearchConfig();
+$settings->set($request['settings'] ?? []);
+
+$algorithmMap = [
+    'default' => \Search\Searching\DefaultSearcher::class,
+    'bm25' => \Search\Searching\BM25::class,
+];
+$algorithm = $request['settings']['global']['algorithm'] ?? 'default';
+$searchClass = $algorithmMap[$algorithm];
+
+$searcher = new $searchClass(
     $config,
+    $settings,
     new DefaultNormalizer(),
     new DefaultTokenizer()
 );
 
 $dicts = [];
-$res = $searcher->search(trim($request['q']), 10);
+$res = $searcher->search(trim($request['q'] ?? ''))->get();
 
-if (count($res['document_ids'])) {
-    $ids = implode(', ', $res['document_ids']);
+if (count($res['ids'])) {
+    $ids = implode(', ', $res['ids']);
 
     $stmt = Database::run("
         SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name FROM entries e

@@ -8,19 +8,21 @@ use Search\Repositories\DocumentIndexRepository;
 use Search\Repositories\InfoRepository;
 use Search\Repositories\InflectionRepository;
 use Search\Repositories\TermIndexRepository;
+use Search\Searching\SearchInterface;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 use Search\Support\Performance;
+use Search\Support\SearchConfig;
 
-class Searcher
+class BM25 implements SearchInterface
 {
-    const LIMIT_DOCUMENTS = 250000;
+    const LIMIT_DOCUMENTS = 50000;
     const LOW_FREQ_CUTFOFF = 0.0025; // 0.25 %
 
-    const BM25_BOOST = 0.75;
+    const BM25_B = 0.75;
     const BM25_K1 = 1.2;
 
-    private $config;
+    private $settings;
     private $normalizer;
     private $tokenizer;
 
@@ -33,16 +35,17 @@ class Searcher
 
     public function __construct(
         DatabaseConfig $config,
+        SearchConfig $settings,
         NormalizerInterface $normalizer,
         TokenizerInterface $tokenizer
     ) {
-        $this->config = $config;
+        $this->settings = $settings;
         $this->normalizer = $normalizer;
         $this->tokenizer = $tokenizer;
 
         $this->performance = new Performance();
 
-        $dbh = DB::create($this->config)->getConnection();
+        $dbh = DB::create($config)->getConnection();
 
         $this->documentIndexRepository = new DocumentIndexRepository($dbh);
         $this->inflectionRepository = new InflectionRepository($dbh);
@@ -50,13 +53,7 @@ class Searcher
         $this->termIndexRepository = new TermIndexRepository($dbh);
     }
 
-    /**
-     * @param string $searchPhrase
-     * @param int $numOfResults
-     *
-     * @return mixed[]
-     */
-    public function search($searchPhrase, $numOfResults = 25)
+    public function search($searchPhrase, $numOfResults = 25) : SearchResult
     {
         $this->performance->start();
 
@@ -74,7 +71,7 @@ class Searcher
         list($keywords) = $this->termIndexRepository->getLowFrequencyTerms(
             $this->filter(array_unique($searchWords)),
             $totalDocuments,
-            self::LOW_FREQ_CUTFOFF
+            $this->settings->get('global.low_freq_cutoff', self::LOW_FREQ_CUTFOFF)
         );
 
         // Get possible inflections
@@ -89,7 +86,7 @@ class Searcher
 
         $documents = $this->documentIndexRepository->getUniqueByTermIds(
             array_unique(array_column($queryTerms, 'id')),
-            self::LIMIT_DOCUMENTS
+            $this->settings->get('bm25.max_query_documents', self::LIMIT_DOCUMENTS)
         );
 
         $terms = $this->termIndexRepository->getByIds(
@@ -106,10 +103,8 @@ class Searcher
         // Scores
         $scores = [];
 
-        $multiplierMap = [
-            'inflection' => 0.8,
-            'exact' => 1.1,
-        ];
+        $k1 = $this->settings->get('bm25.k1', self::BM25_K1);
+        $b = $this->settings->get('bm25.b', self::BM25_B);
 
         foreach ($documents as $documentId => $documentTerms) {
             $documentLength = count($documentTerms);
@@ -121,8 +116,8 @@ class Searcher
                 $idf = $queryTermsIdf[$termId];
 
                 $tf = $this->bm25TF(
-                    self::BM25_K1,
-                    self::BM25_BOOST,
+                    $k1,
+                    $b,
                     $termFrequencies[$termId] ?? 0,
                     $documentLength,
                     $averageDocumentLength
@@ -149,14 +144,15 @@ class Searcher
             // }
         }
 
-        $best = $this->getBestMatches($scores, $numOfResults);
+        $best = $this->getBestMatches($scores, $this->settings->get('global.search_results', $numOfResults));
 
-        return [
-            'document_ids' => array_keys($best),
-            'scores' => $best,
-            'total_hits' => count($scores),
-            'stats' => $this->performance->get(),
-        ];
+        $results = new SearchResult();
+        $results->setIds(array_keys($best));
+        $results->setScores($best);
+        $results->setTotalHits(count($scores));
+        $results->setStats($this->performance->get());
+
+        return $results;
     }
 
     private function getBestMatches(array $scores, $numOfResults)

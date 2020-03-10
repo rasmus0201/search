@@ -4,6 +4,7 @@ const app = new Vue({
     data() {
         return {
             input: '',
+            searching: false,
             result: {
                 document_ids: [],
                 scores: {},
@@ -20,7 +21,28 @@ const app = new Vue({
                 },
                 dictionaries: [],
             },
-            settings: {},
+            settings: {
+                global: {
+                    algorithm: 'default',
+                    search_results: 20,
+                    use_inflections: true,
+                    low_freq_cutoff: 0.0025
+                },
+                default: {
+                    exact_score: 20,
+                    inflection_score: 16,
+                    proximity_score: 1,
+                    is_lemma_multiplier: 1.3,
+                    is_repeated_multiplier: 0.5,
+                    result_cutoff_multiplier: 0.4,
+                    max_duplicate_scores: 5
+                },
+                bm25: {
+                    max_query_documents: 50000,
+                    k1: 1.2,
+                    b: 0.75
+                }
+            },
         };
     },
 
@@ -34,8 +56,22 @@ const app = new Vue({
         }
     },
 
+    watch: {
+        settings: {
+            handler(val) {
+                this.search();
+            },
+            deep: true
+        }
+    },
+
     methods: {
         search() {
+            // if (this.searching === true) {
+            //     return;
+            // }
+
+            this.searching = true;
             const input = this.input.trim();
 
             const searchParams = new URLSearchParams(window.location.search);
@@ -48,13 +84,18 @@ const app = new Vue({
             }
 
             axios.post('api.php', {
-                q: input
+                q: input,
+                settings: this.settings
             })
             .then((response) => {
+                this.searching = false;
                 this.result = response.data;
             })
             .then(() => {
                 PR.prettyPrint();
+            })
+            .catch(() => {
+                this.searching = false;
             });
         },
     }
