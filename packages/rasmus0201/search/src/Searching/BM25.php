@@ -68,10 +68,11 @@ class BM25 implements SearchInterface
         $totalDocuments = (int) $this->infoRepository->getValueByKey('total_documents');
 
         // Get only low frequency words
+        $lowFreqCutoff = $this->settings->get('global.low_freq_cutoff', self::LOW_FREQ_CUTFOFF);
         list($keywords) = $this->termIndexRepository->getLowFrequencyTerms(
             $this->filter(array_unique($searchWords)),
             $totalDocuments,
-            $this->settings->get('global.low_freq_cutoff', self::LOW_FREQ_CUTFOFF)
+            $lowFreqCutoff
         );
 
         // Get possible inflections
@@ -84,8 +85,12 @@ class BM25 implements SearchInterface
             $this->filter(array_unique(array_merge($keywords, $inflections)))
         );
 
+        $queryTermsSearch = array_filter($queryTerms, function($term) use ($totalDocuments, $lowFreqCutoff) {
+            return (($term['num_docs'] / $totalDocuments) < $lowFreqCutoff);
+        });
+
         $documents = $this->documentIndexRepository->getUniqueByTermIds(
-            array_unique(array_column($queryTerms, 'id')),
+            array_unique(array_column($queryTermsSearch, 'id')),
             $this->settings->get('bm25.max_query_documents', self::LIMIT_DOCUMENTS)
         );
 
