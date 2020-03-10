@@ -116,6 +116,7 @@ class TermIndexRepository extends AbstractRepository
     public function getLowFrequencyTerms(array $keywords, $totalDocuments, $cutoffFrequency = 0.01)
     {
         $terms = $this->getByKeywords($keywords);
+        $termsId = array_column($terms, 'num_docs', 'term');
         $termsPopularity = array_column($terms, 'num_docs', 'term');
 
         $lowFreqTerms = [];

@@ -46,7 +46,7 @@ if (count($res['ids'])) {
     $ids = implode(', ', $res['ids']);
 
     $stmt = Database::run("
-        SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name FROM entries e
+        SELECT e.*, re.data as data, dict.id as dict_id, dict.name as dict_name, dir.name as direction FROM entries e
 
         INNER JOIN directions dir ON dir.id = e.direction_id
         INNER JOIN dictionaries dict ON dict.id = dir.dictionary_id

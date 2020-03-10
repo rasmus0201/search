@@ -26,6 +26,7 @@ class DefaultSearcher implements SearchInterface
 
     const EXACT_SCORE = 20;
     const INFLECTION_SCORE = 16;
+    const STOPWORD_SCORE = 7;
     const PROXIMITY_SCORE = 1;
     const IS_LEMMA_MULTIPLIER = 1.3;
     const IS_REPEATED_MULTIPLIER = 0.5;
@@ -72,7 +73,7 @@ class DefaultSearcher implements SearchInterface
         // Is the total number of documents (docCount)
         $totalDocuments = (int) $this->infoRepository->getValueByKey('total_documents');
 
-        // Get only low frequency words
+        // $terms = $this->termIndexRepository->getByKeywords($this->filter(array_unique($searchWords)));
         list($searchWords, $terms) = $this->termIndexRepository->getLowFrequencyTerms(
             $this->filter(array_unique($searchWords)),
             $totalDocuments,
@@ -113,12 +114,15 @@ class DefaultSearcher implements SearchInterface
         $currentArticle = null;
         // All these variables will be set the first time through the foreach
         $isTermMatch = false;
+        $hasNonStopword = false;
         $phraseLength = 0;
         $matchCount = 0;
         $gapCount = 0;
         $usedWords = [];
         $score = 0;
         $lastPosition = 0;
+
+        $stopwords = $this->getStopwords();
 
         $proximityScore = $this->settings->get('default.proximity_score', self::PROXIMITY_SCORE);
         $isLemmaMultiplier = $this->settings->get('default.is_lemma_multiplier', self::IS_LEMMA_MULTIPLIER);
@@ -128,7 +132,7 @@ class DefaultSearcher implements SearchInterface
 
         foreach ($rows as $row) {
             if ($row['document_id'] != $currentArticle) {
-                if ($currentArticle) {
+                if ($currentArticle && $hasNonStopword) {
                     $score -= $gapCount * $proximityScore;
                     $score -= $phraseLength - $matchCount;
                     $result[$currentArticle] = $isTermMatch ? ($score * $isLemmaMultiplier) : $score;
@@ -146,16 +150,20 @@ class DefaultSearcher implements SearchInterface
             }
 
             $wordScore = 0;
-            if (isset($inflectionsById[$row['term_id']])) {
+            if (isset($stopwords[$row['term']])) {
+                $wordScore = self::STOPWORD_SCORE;
+            } elseif (isset($inflectionsById[$row['term_id']])) {
                 $wordScore = $inflectionScore;
+                $hasNonStopword = true;
             } elseif (isset($termsByIds[$row['term_id']])) {
                 $wordScore = $exactScore;
+                $hasNonStopword = true;
             }
 
-            if (isset($usedWords[$row['term']])) {
+            if (isset($usedWords[$row['term_id']])) {
                 $score += $wordScore * $isRepeatedMultiplier;
             } else {
-                $usedWords[$row['term']] = true;
+                $usedWords[$row['term_id']] = true;
                 $score += $wordScore;
             }
 
@@ -164,7 +172,7 @@ class DefaultSearcher implements SearchInterface
         }
 
         // This is needed to catch the last phrase
-        if ($currentArticle) {
+        if ($currentArticle && $hasNonStopword) {
             $score -= $gapCount * $proximityScore;
             $score -= $phraseLength - $matchCount;
             $result[$currentArticle] = $isTermMatch ? ($score * $isLemmaMultiplier) : $score;
@@ -217,6 +225,106 @@ class DefaultSearcher implements SearchInterface
         }
 
         return array_slice($result, 0, min($scoreLimit, $limit), true);
+    }
+
+    private function getStopwords()
+    {
+        return [
+            'og' => true,
+            'i' => true,
+            'jeg' => true,
+            'det' => true,
+            'at' => true,
+            'en' => true,
+            'den' => true,
+            'til' => true,
+            'er' => true,
+            'som' => true,
+            'på' => true,
+            'de' => true,
+            'med' => true,
+            'han' => true,
+            'af' => true,
+            'for' => true,
+            'ikke' => true,
+            'der' => true,
+            'var' => true,
+            'mig' => true,
+            'sig' => true,
+            'men' => true,
+            'et' => true,
+            'har' => true,
+            'om' => true,
+            'vi' => true,
+            'min' => true,
+            'havde' => true,
+            'ham' => true,
+            'hun' => true,
+            'nu' => true,
+            'over' => true,
+            'da' => true,
+            'fra' => true,
+            'du' => true,
+            'ud' => true,
+            'sin' => true,
+            'dem' => true,
+            'os' => true,
+            'op' => true,
+            'man' => true,
+            'hans' => true,
+            'hvor' => true,
+            'eller' => true,
+            'hvad' => true,
+            'skal' => true,
+            'selv' => true,
+            'her' => true,
+            'alle' => true,
+            'vil' => true,
+            'blev' => true,
+            'kunne' => true,
+            'ind' => true,
+            'når' => true,
+            'være' => true,
+            'dog' => true,
+            'noget' => true,
+            'ville' => true,
+            'jo' => true,
+            'deres' => true,
+            'efter' => true,
+            'ned' => true,
+            'skulle' => true,
+            'denne' => true,
+            'end' => true,
+            'dette' => true,
+            'mit' => true,
+            'også' => true,
+            'under' => true,
+            'have' => true,
+            'dig' => true,
+            'anden' => true,
+            'hende' => true,
+            'mine' => true,
+            'alt' => true,
+            'meget' => true,
+            'sit' => true,
+            'sine' => true,
+            'vor' => true,
+            'mod' => true,
+            'disse' => true,
+            'hvis' => true,
+            'din' => true,
+            'nogle' => true,
+            'hos' => true,
+            'blive' => true,
+            'mange' => true,
+            'ad' => true,
+            'bliver' => true,
+            'hendes' => true,
+            'været' => true,
+            'thi' => true,
+            'jer' => true,
+            'sådan' => true,
+        ];
     }
 
     private function filter(array $keywords)

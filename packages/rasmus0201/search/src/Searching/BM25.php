@@ -67,40 +67,38 @@ class BM25 implements SearchInterface
         // Is the total number of documents (docCount)
         $totalDocuments = (int) $this->infoRepository->getValueByKey('total_documents');
 
-        // Get only low frequency words
-        $lowFreqCutoff = $this->settings->get('global.low_freq_cutoff', self::LOW_FREQ_CUTFOFF);
-        list($keywords) = $this->termIndexRepository->getLowFrequencyTerms(
-            $this->filter(array_unique($searchWords)),
-            $totalDocuments,
-            $lowFreqCutoff
-        );
-
         // Get possible inflections
-        $inflections = array_column(
-            $this->inflectionRepository->getByKeywords($searchWords),
+        $inflections = $this->inflectionRepository->getByKeywords($searchWords);
+        $inflectionWords = array_column(
+            $inflections,
             'inflection'
         );
 
         $queryTerms = $this->termIndexRepository->getByKeywords(
-            $this->filter(array_unique(array_merge($keywords, $inflections)))
+            $this->filter(array_unique(array_merge($searchWords, $inflectionWords)))
         );
 
+        // Search only documents with low frequency words
+        $lowFreqCutoff = $this->settings->get('global.low_freq_cutoff', self::LOW_FREQ_CUTFOFF);
         $queryTermsSearch = array_filter($queryTerms, function($term) use ($totalDocuments, $lowFreqCutoff) {
             return (($term['num_docs'] / $totalDocuments) < $lowFreqCutoff);
         });
 
-        $documents = $this->documentIndexRepository->getUniqueByTermIds(
-            array_unique(array_column($queryTermsSearch, 'id')),
-            $this->settings->get('bm25.max_query_documents', self::LIMIT_DOCUMENTS)
-        );
-
-        $terms = $this->termIndexRepository->getByIds(
-            array_unique(array_column($documents, 'term_id'))
-        );
-
-        $termsById = $this->termsById($terms);
+        // If there is no lo-freq terms search for documents where all term ids exists
+        if (empty($queryTermsSearch)) {
+            $documents = $this->documentIndexRepository->getStrictUniqueByTermIds(
+                array_unique(array_column($queryTerms, 'id')),
+                $this->settings->get('bm25.max_query_documents', self::LIMIT_DOCUMENTS)
+            );
+        } else {
+            $documents = $this->documentIndexRepository->getUniqueByTermIds(
+                array_unique(array_column($queryTermsSearch, 'id')),
+                $this->settings->get('bm25.max_query_documents', self::LIMIT_DOCUMENTS)
+            );
+        }
 
         $documents = $this->constructDocuments($documents);
+        $inflections = $this->constructInflections($inflections);
 
         // IDF for search terms
         $queryTermsIdf = $this->idf($queryTerms);
@@ -135,15 +133,16 @@ class BM25 implements SearchInterface
             // foreach ($documentTerms as $documentTerm) {
             //     $termId = $documentTerm['term_id'];
             //     $termPosition = $documentTerm['position'];
-            //     $term = $terms[$termsById[$termId]];
+            //     $term = $documentTerm['term'];
             //
             //     // Proximity scoring
-            //     $proximity = $this->proximityScore(
-            //         $term['term'],
+            //     $bestProximity = $this->proximityScore(
+            //         $term,
             //         $termPosition,
-            //         $keywords
+            //         $searchWords
             //     );
-            //     $proximityScore = $documentLength - min(abs($proximity), ($documentLength + 1));
+            //
+            //     $proximityScore = $documentLength - min(abs($bestProximity), ($documentLength + 1));
             //
             //     $scores[$documentId] -= $proximityScore;
             // }
@@ -229,9 +228,18 @@ class BM25 implements SearchInterface
         return min($positions);
     }
 
-    private function termsById(array $terms)
+    private function constructInflections(array $inflections)
     {
-        return array_combine(array_column($terms, 'id'), array_keys($terms));
+        $result = [];
+        foreach ($inflections as $inflection) {
+            if (!isset($result[$inflection['term_id']])) {
+                $result[$inflection['term_id']] = [];
+            }
+
+            $result[$inflection['term_id']][] = $inflection;
+        }
+
+        return $result;
     }
 
     private function constructDocuments(array $documents)

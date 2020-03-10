@@ -57,15 +57,69 @@ class DocumentIndexRepository extends AbstractRepository
         }
 
         $stmt = $this->dbh->prepare("
-            SELECT DISTINCT i.`document_id`, i.`term_id`, i.`position`
-            FROM document_index i
-            WHERE i.`term_id` IN (" . implode(',', $termIds) . ")
-            ORDER BY i.`document_id`, i.`position`
+            SELECT di.`document_id`, t.`length`, di.`position`, di.`term_id`, ti.`term`, ti.`num_hits`, ti.`num_docs`
+            FROM document_index di
+
+            INNER JOIN (
+                SELECT di.`document_id`, COUNT(*) as length
+                FROM document_index di
+
+                INNER JOIN term_index ti ON ti.id = di.term_id
+
+                WHERE ti.`id` IN (".implode(',', $termIds).")
+
+                GROUP BY di.`document_id`
+            ) t ON t.document_id = di.document_id
+            INNER JOIN term_index ti ON ti.id = di.term_id
+
+            ORDER BY
+                di.`document_id` ASC,
+                di.`position` ASC
+
+            LIMIT :limit
+        ");
+
+        $stmt->execute([
+            ':limit' => $limit
+        ]);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getStrictUniqueByTermIds(array $termIds, $limit)
+    {
+        if (empty($termIds)) {
+            return [];
+        }
+
+        $stmt = $this->dbh->prepare("
+            SELECT di.`document_id`, t.`length`, di.`position`, di.`term_id`, ti.`term`, ti.`num_hits`, ti.`num_docs`
+            FROM document_index di
+
+            INNER JOIN (
+                SELECT di.`document_id`, COUNT(*) as length
+                FROM document_index di
+
+                INNER JOIN term_index ti ON ti.id = di.term_id
+
+                WHERE ti.`id` IN (".implode(',', $termIds).")
+
+                GROUP BY di.`document_id`
+
+                HAVING COUNT(DISTINCT ti.`id`) = :length
+            ) t ON t.document_id = di.document_id
+            INNER JOIN term_index ti ON ti.id = di.term_id
+
+            ORDER BY
+                di.`document_id` ASC,
+                di.`position` ASC
+
             LIMIT :limit
         ");
 
         $stmt->execute([
             ':limit' => $limit,
+            ':length' => count($termIds)
         ]);
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);

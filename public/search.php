@@ -103,6 +103,7 @@
 
                         <div class="search-results__item" v-for="(item, index) in dict.entries" :key="'item-'+index">
                             <h3>{{ item.headword }}</h3>
+                            <small>Direction: {{ item.direction }}</small>
                             <small>EntryId: {{ item.id }}</small>
                             <small>Score: {{ item.score }}</small>
                             <pre class="prettyprint lang-xml" v-text="item.data"></pre>
