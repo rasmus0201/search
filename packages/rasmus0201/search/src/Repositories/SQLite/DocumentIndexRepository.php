@@ -12,14 +12,15 @@ class DocumentIndexRepository extends AbstractRepository implements DocumentInde
     public function createTableIfNotExists()
     {
         $this->dbh->exec("CREATE TABLE IF NOT EXISTS document_index (
-            `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
-            `document_id` INT(11) unsigned NOT NULL,
-            `term_id` INT(11) unsigned NOT NULL,
-            `position` INT(11) unsigned NOT NULL,
+            `id` INTEGER NOT NULL ,
+            `document_id` INTEGER NOT NULL,
+            `term_id` INTEGER NOT NULL,
+            `position` INTEGER NOT NULL,
             PRIMARY KEY (`id`),
-            UNIQUE KEY `unique_document_term_position` (`document_id`, `term_id`, `position`),
-            KEY `idx_term_position` (`term_id`, `position`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+            UNIQUE(`document_id`, `term_id`, `position`) ON CONFLICT REPLACE
+        )");
+
+        $this->dbh->exec("CREATE INDEX `_idx_term_position` ON document_index (`term_id`, `position`) COLLATE BINARY");
     }
 
     public function create(Term $term)

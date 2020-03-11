@@ -12,21 +12,21 @@ class InfoRepository extends AbstractRepository implements InfoRepositoryInterfa
     public function createTableIfNotExists()
     {
         $this->dbh->exec("CREATE TABLE IF NOT EXISTS info (
-            `key` VARCHAR(255) NOT NULL,
+            `key` TEXT NOT NULL,
             `value` FLOAT(11, 4),
             PRIMARY KEY (`key`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+        )");
 
         $this->dbh->exec("
             INSERT INTO info (`key`, `value`)
             VALUES ('total_documents', 0)
-            ON DUPLICATE KEY UPDATE `key` = `key`
+            ON CONFLICT(`key`) DO UPDATE SET `key` = `key`
         ");
 
         $this->dbh->exec("
             INSERT INTO info (`key`, `value`)
             VALUES ('average_document_length', 0)
-            ON DUPLICATE KEY UPDATE `key` = `key`
+            ON CONFLICT(`key`) DO UPDATE SET `key` = `key`
         ");
     }
 
@@ -53,7 +53,7 @@ class InfoRepository extends AbstractRepository implements InfoRepositoryInterfa
 
     public function updateByKey($key, $value)
     {
-        $stmt = $this->dbh->prepare('UPDATE info i SET i.`value` = :val WHERE i.`key` = :key');
+        $stmt = $this->dbh->prepare("UPDATE info SET `value` = :val WHERE `key` = :key");
         $stmt->execute([
             ':key' => $key,
             ':val' => $value,

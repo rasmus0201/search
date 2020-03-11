@@ -12,22 +12,24 @@ class InflectionRepository extends AbstractRepository implements InflectionRepos
     public function createTableIfNotExists()
     {
         $this->dbh->exec("CREATE TABLE IF NOT EXISTS inflections (
-            `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
-            `inflection` VARCHAR(255) NOT NULL,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `unique_inflection` (`inflection`),
-            KEY `idx_inflection` (`inflection`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+            `id` INTEGER NOT NULL ,
+            `inflection` TEXT NOT NULL,
+            PRIMARY KEY (`id`)
+        )");
+
+        $this->dbh->exec("CREATE UNIQUE INDEX `_unique_inflection` ON inflections (`inflection`)");
+        $this->dbh->exec("CREATE INDEX `_idx_inflection` ON inflections (`inflection`)");
 
         $this->dbh->exec("CREATE TABLE IF NOT EXISTS term_has_inflections (
-            `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
-            `term_id` INT(11) unsigned NOT NULL,
-            `inflection_id` INT(11) unsigned NOT NULL,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `unique_term_inflection` (`term_id`, `inflection_id`),
-            KEY `idx_term_id_inflection_id` (`term_id`, `inflection_id`),
-            KEY `idx_inflection_id_term_id` (`inflection_id`, `term_id`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+            `id` INTEGER NOT NULL ,
+            `term_id` INTEGER NOT NULL,
+            `inflection_id` INTEGER NOT NULL,
+            PRIMARY KEY (`id`)
+        )");
+
+        $this->dbh->exec("CREATE UNIQUE INDEX `_unique_term_inflection` ON term_has_inflections (`term_id`) COLLATE BINARY");
+        $this->dbh->exec("CREATE INDEX `_idx_term_id_inflection_id` ON term_has_inflections (`term_id`) COLLATE BINARY");
+        $this->dbh->exec("CREATE INDEX `_idx_inflection_id_term_id` ON term_has_inflections (`inflection_id`) COLLATE BINARY");
     }
 
     public function createMany(Term $term, array $inflections)

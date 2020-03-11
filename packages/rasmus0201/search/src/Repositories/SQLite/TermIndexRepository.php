@@ -13,14 +13,15 @@ class TermIndexRepository extends AbstractRepository implements TermIndexReposit
     public function createTableIfNotExists()
     {
         $this->dbh->exec("CREATE TABLE IF NOT EXISTS term_index (
-            `id` INT(11) unsigned NOT NULL AUTO_INCREMENT,
-            `term` VARCHAR(255) NOT NULL,
-            `num_hits` INT(11) NOT NULL,
-            `num_docs` INT(11) NOT NULL,
-            PRIMARY KEY (`id`),
-            UNIQUE KEY `unique_term` (`term`),
-            KEY `idx_term` (`term`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+            `id` INTEGER  NOT NULL ,
+            `term` TEXT NOT NULL,
+            `num_hits` INTEGER NOT NULL,
+            `num_docs` INTEGER NOT NULL,
+            PRIMARY KEY (`id`)
+        )");
+
+        $this->dbh->exec("CREATE UNIQUE INDEX `_unique_term` ON term_index (`term`)");
+        $this->dbh->exec("CREATE INDEX `_idx_term` ON term_index (`term`)");
     }
 
     public function create(Term $term)
@@ -39,10 +40,10 @@ class TermIndexRepository extends AbstractRepository implements TermIndexReposit
     public function incrementHits(Term $term, $increment = 1)
     {
         $stmt = $this->dbh->prepare("
-            UPDATE term_index i
-            SET i.`num_docs` = i.`num_docs` + :docs,
-                i.`num_hits` = i.`num_hits` + :hits
-            WHERE i.`term` = :term
+            UPDATE term_index
+            SET `num_docs` = `num_docs` + :docs,
+                `num_hits` = `num_hits` + :hits
+            WHERE `term` = :term
         ");
 
         $stmt->execute([
@@ -79,20 +80,20 @@ class TermIndexRepository extends AbstractRepository implements TermIndexReposit
         }
 
         $placeholders = ':' . implode(', :', range(0, count($keywords) - 1));
-        $orderPlaceholders = str_replace(':', ':o', $placeholders);
 
         $params = [];
         foreach ($keywords as $key => $value) {
             $params[':' . $key] = $value;
-            $params[':o' . $key] = $value;
         }
 
         $stmt = $this->dbh->prepare("
             SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs`
             FROM term_index i
             WHERE i.`term` IN (".$placeholders.")
-            ORDER BY FIELD(i.`term`, ".$orderPlaceholders.")
         ");
+
+        // TODO ORDER BY FIELD($placeholders)
+        // https://stackoverflow.com/questions/3303851/sqlite-and-custom-order-by
 
         $stmt->execute($params);
 
