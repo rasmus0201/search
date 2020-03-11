@@ -13,6 +13,10 @@ use Search\Repositories\MySql\DocumentIndexRepository;
 use Search\Repositories\MySql\InflectionRepository;
 use Search\Repositories\MySql\InfoRepository;
 use Search\Repositories\MySql\TermIndexRepository;
+use Search\Repositories\SQLite\DocumentIndexRepository as SQLiteDocumentIndexRepository;
+use Search\Repositories\SQLite\InflectionRepository as SQLiteInflectionRepository;
+use Search\Repositories\SQLite\InfoRepository as SQLiteInfoRepository;
+use Search\Repositories\SQLite\TermIndexRepository as SQLiteTermIndexRepository;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 
@@ -49,10 +53,10 @@ class Indexer
         $this->dbh = DB::create($this->config)->getConnection();
 
         if ($this->config->getDriver() === 'sqlite') {
-            $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
-            $this->inflectionRepository = new InflectionRepository($this->dbh);
-            $this->infoRepository = new InfoRepository($this->dbh);
-            $this->termIndexRepository = new TermIndexRepository($this->dbh);
+            $this->documentIndexRepository = new SQLiteDocumentIndexRepository($this->dbh);
+            $this->inflectionRepository = new SQLiteInflectionRepository($this->dbh);
+            $this->infoRepository = new SQLiteInfoRepository($this->dbh);
+            $this->termIndexRepository = new SQLiteTermIndexRepository($this->dbh);
         } else {
             $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
             $this->inflectionRepository = new InflectionRepository($this->dbh);
