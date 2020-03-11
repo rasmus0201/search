@@ -86,7 +86,7 @@ class TermIndexRepository extends AbstractRepository implements TermIndexReposit
         foreach ($keywords as $key => $value) {
             $params[':' . $key] = $value;
             $params[':order_term_'.$key] = $value;
-            $order[] = 'WHEN :order_term_'.$key. 'THEN '.$key;
+            $order[] = 'WHEN '.':order_term_'.$key. ' THEN '.$key;
         }
 
         $stmt = $this->dbh->prepare("

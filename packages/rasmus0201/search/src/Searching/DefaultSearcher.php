@@ -60,16 +60,16 @@ class DefaultSearcher implements SearchInterface
 
         $dbh = DB::create($config)->getConnection();
 
-        if ($this->config->getDriver() === 'sqlite') {
-            $this->documentIndexRepository = new SQLiteDocumentIndexRepository($this->dbh);
-            $this->inflectionRepository = new SQLiteInflectionRepository($this->dbh);
-            $this->infoRepository = new SQLiteInfoRepository($this->dbh);
-            $this->termIndexRepository = new SQLiteTermIndexRepository($this->dbh);
+        if ($config->getDriver() === 'sqlite') {
+            $this->documentIndexRepository = new SQLiteDocumentIndexRepository($dbh);
+            $this->inflectionRepository = new SQLiteInflectionRepository($dbh);
+            $this->infoRepository = new SQLiteInfoRepository($dbh);
+            $this->termIndexRepository = new SQLiteTermIndexRepository($dbh);
         } else {
-            $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
-            $this->inflectionRepository = new InflectionRepository($this->dbh);
-            $this->infoRepository = new InfoRepository($this->dbh);
-            $this->termIndexRepository = new TermIndexRepository($this->dbh);
+            $this->documentIndexRepository = new DocumentIndexRepository($dbh);
+            $this->inflectionRepository = new InflectionRepository($dbh);
+            $this->infoRepository = new InfoRepository($dbh);
+            $this->termIndexRepository = new TermIndexRepository($dbh);
         }
     }
 

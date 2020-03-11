@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../run.php';
+
 use App\Database\Database;
 use Search\DefaultNormalizer;
 use Search\DefaultTokenizer;
@@ -17,10 +19,18 @@ if (!$request) {
 }
 
 $config = new DatabaseConfig();
-$config->setHost('localhost');
-$config->setDatabase('search');
-$config->setUsername('root');
-$config->setPassword('');
+$storagePath = ABS_PATH . '/storage/';
+
+if (isset($request['sqlite']) && is_file($storagePath.$request['sqlite']) !== false) {
+    $config->setDriver('sqlite');
+    $config->setDatabase($storagePath.$request['sqlite']);
+} else {
+    $config->setDriver('mysql');
+    $config->setHost('localhost');
+    $config->setDatabase('search');
+    $config->setUsername('root');
+    $config->setPassword('');
+}
 
 $settings = new SearchConfig();
 $settings->set($request['settings'] ?? []);

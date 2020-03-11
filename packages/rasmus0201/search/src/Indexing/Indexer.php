@@ -84,7 +84,7 @@ class Indexer
         }
 
         foreach ($params as $param => $value) {
-            $stmt->bindValue(':'.$param, $value, (ctype_digit($value) ? (PDO::PARAM_INT) : PDO::PARAM_STR));
+            $stmt->bindValue($param, $value, (ctype_digit($value) ? (PDO::PARAM_INT) : PDO::PARAM_STR));
         }
 
         $stmt->execute();

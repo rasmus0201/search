@@ -41,7 +41,7 @@ class InflectionRepository extends AbstractRepository implements InflectionRepos
         $stmt = $this->dbh->prepare("
             INSERT INTO inflections (`inflection`)
             VALUES (:inflection)
-            ON DUPLICATE KEY UPDATE `inflection` = `inflection`
+            ON CONFLICT(`inflection`) DO UPDATE SET `inflection` = `inflection`
         ");
 
         foreach ($inflections as $inflection) {

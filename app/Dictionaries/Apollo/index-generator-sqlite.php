@@ -11,22 +11,45 @@ $queryDbh->setHost('localhost');
 $queryDbh->setDatabase('search');
 $queryDbh->setUsername('root');
 
-$config = new DatabaseConfig();
-$config->setDriver('sqlite');
-$config->setDatabase(ABS_PATH . '/storage/apollo.daen_rod.index');
+$directions = [
+    [
+        'direction_id' => 7,
+        'index_file' => ABS_PATH . '/storage/apollo.daen_rod.index',
+    ],
+    [
+        'direction_id' => 8,
+        'index_file' => ABS_PATH . '/storage/apollo.enda_rod.index',
+    ],
+    [
+        'direction_id' => 9,
+        'index_file' => ABS_PATH . '/storage/apollo.daen_stor.index',
+    ],
+    [
+        'direction_id' => 10,
+        'index_file' => ABS_PATH . '/storage/apollo.enda_stor.index',
+    ],
+];
 
-$indexer = new Indexer(
-    $config,
-    new DocumentTransformer($config),
-    new \Search\DefaultNormalizer(),
-    new \Search\DefaultTokenizer()
-);
+foreach ($directions as $direction) {
+    $config = new DatabaseConfig();
+    $config->setDriver('sqlite');
+    $config->setDatabase($direction['index_file']);
 
-$indexer->setQueryHandle($queryDbh);
+    $indexer = new Indexer(
+        $config,
+        new DocumentTransformer($queryDbh),
+        new \Search\DefaultNormalizer(),
+        new \Search\DefaultTokenizer()
+    );
 
-$indexer->setQuery("
-    SELECT e.`id`, e.`lemma_id`, e.`headword` as document FROM `entries` e
-    WHERE e.`direction_id` = 7
-");
+    $indexer->setQueryHandle($queryDbh);
 
-$indexer->run();
+    $indexer->setQuery("
+        SELECT e.`id`, e.`lemma_id`, e.`headword` as document FROM `entries` e
+        WHERE e.`direction_id` = :direction_id
+    ", [
+        ':direction_id' => $direction['direction_id']
+    ]);
+
+    $indexer->run();
+}
