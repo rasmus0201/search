@@ -16,8 +16,8 @@
                         <label>
                             Search algorithm:
                             <select v-bind:value="settings.global.algorithm" @change="settings.global.algorithm = $event.target.value">
-                                <option value="default">Default</option>
                                 <option value="bm25">BM25</option>
+                                <option value="default">Lemma</option>
                             </select>
                         </label>
                         <label>

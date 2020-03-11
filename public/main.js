@@ -23,7 +23,7 @@ const app = new Vue({
             },
             settings: {
                 global: {
-                    algorithm: 'default',
+                    algorithm: 'bm25',
                     search_results: 20,
                     use_inflections: true,
                     low_freq_cutoff: 0.0025
