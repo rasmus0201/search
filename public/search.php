@@ -79,6 +79,7 @@
                             <input v-model="settings.bm25.k1" type="number" min="0" max="100" step="0.01">
                         </label>
                     </fieldset>
+                    <button type="button" @click="reset">Reset settings</button>
                 </div>
                 <div class="grid__item search-field">
                     <form @submit.prevent="search">

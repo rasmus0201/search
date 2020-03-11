@@ -43,6 +43,7 @@ const app = new Vue({
                     b: 0.75
                 }
             },
+            defaultSettings: '{"global":{"algorithm":"bm25","search_results":20,"use_inflections":true,"low_freq_cutoff":0.0025},"default":{"exact_score":20,"inflection_score":16,"proximity_score":1,"is_lemma_multiplier":1.3,"is_repeated_multiplier":0.5,"result_cutoff_multiplier":0.4,"max_duplicate_scores":5},"bm25":{"max_query_documents":50000,"k1":1.2,"b":0.75}}'
         };
     },
 
@@ -72,6 +73,10 @@ const app = new Vue({
     },
 
     methods: {
+        reset() {
+            this.settings = JSON.parse(this.defaultSettings);
+        },
+
         search() {
             if (this.searching === true) {
                 return;
