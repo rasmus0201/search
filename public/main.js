@@ -47,6 +47,11 @@ const app = new Vue({
     },
 
     created() {
+        const settings = window.localStorage.getItem('settings');
+        if (settings) {
+            this.settings = JSON.parse(settings);
+        }
+
         const searchParams = new URLSearchParams(window.location.search);
 
         this.input = searchParams.get('q') || '';
@@ -59,6 +64,7 @@ const app = new Vue({
     watch: {
         settings: {
             handler(val) {
+                window.localStorage.setItem('settings', JSON.stringify(val));
                 this.search();
             },
             deep: true
@@ -67,9 +73,9 @@ const app = new Vue({
 
     methods: {
         search() {
-            // if (this.searching === true) {
-            //     return;
-            // }
+            if (this.searching === true) {
+                return;
+            }
 
             this.searching = true;
             const input = this.input.trim();
