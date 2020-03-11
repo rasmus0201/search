@@ -82,18 +82,22 @@ class TermIndexRepository extends AbstractRepository implements TermIndexReposit
         $placeholders = ':' . implode(', :', range(0, count($keywords) - 1));
 
         $params = [];
+        $order = [];
         foreach ($keywords as $key => $value) {
             $params[':' . $key] = $value;
+            $params[':order_term_'.$key] = $value;
+            $order[] = 'WHEN :order_term_'.$key. 'THEN '.$key;
         }
 
         $stmt = $this->dbh->prepare("
             SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs`
             FROM term_index i
             WHERE i.`term` IN (".$placeholders.")
+            ORDER BY
+                CASE i.`term`
+                    ".implode("\n", $order)."
+                END
         ");
-
-        // TODO ORDER BY FIELD($placeholders)
-        // https://stackoverflow.com/questions/3303851/sqlite-and-custom-order-by
 
         $stmt->execute($params);
 
