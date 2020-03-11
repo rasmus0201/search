@@ -1,11 +1,13 @@
 <?php
 
-namespace Search\Repositories;
+namespace Search\Repositories\MySql;
 
 use Exception;
 use PDO;
+use Search\Repositories\AbstractRepository;
+use Search\Repositories\InfoRepositoryInterface;
 
-class InfoRepository extends AbstractRepository
+class InfoRepository extends AbstractRepository implements InfoRepositoryInterface
 {
     public function createTableIfNotExists()
     {

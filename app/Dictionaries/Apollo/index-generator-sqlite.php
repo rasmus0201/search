@@ -6,18 +6,14 @@ use App\Dictionaries\Apollo\DocumentTransformer;
 use Search\Indexing\Indexer;
 use Search\Support\DatabaseConfig;
 
-// use App\Database\Database;
-// Database::run("DROP TABLE IF EXISTS info");
-// Database::run("DROP TABLE IF EXISTS term_has_inflections");
-// Database::run("DROP TABLE IF EXISTS inflections");
-// Database::run("DROP TABLE IF EXISTS term_index");
-// Database::run("DROP TABLE IF EXISTS document_index");
+$queryDbh = new DatabaseConfig();
+$queryDbh->setHost('localhost');
+$queryDbh->setDatabase('search');
+$queryDbh->setUsername('root');
 
 $config = new DatabaseConfig();
-$config->setHost('localhost');
-$config->setDatabase('search');
-$config->setUsername('root');
-$config->setPassword('');
+$config->setDriver('sqlite');
+$config->setDatabase(ABS_PATH . '/storage/apollo.daen_rod.index');
 
 $indexer = new Indexer(
     $config,
@@ -26,9 +22,11 @@ $indexer = new Indexer(
     new \Search\DefaultTokenizer()
 );
 
+$indexer->setQueryHandle($queryDbh);
+
 $indexer->setQuery("
     SELECT e.`id`, e.`lemma_id`, e.`headword` as document FROM `entries` e
-    WHERE e.`direction_id` IN (7, 8)
+    WHERE e.`direction_id` = 7
 ");
 
 $indexer->run();

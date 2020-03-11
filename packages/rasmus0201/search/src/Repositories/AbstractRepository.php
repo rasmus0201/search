@@ -15,4 +15,9 @@ abstract class AbstractRepository
     {
         $this->dbh = $databaseHandle;
     }
+
+    public function setDatabaseHandle(PDO $databaseHandle)
+    {
+        $this->dbh = $databaseHandle;
+    }
 }

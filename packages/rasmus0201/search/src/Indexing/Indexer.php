@@ -9,10 +9,10 @@ use Search\Indexing\IndexTransformerInterface;
 use Search\Indexing\Term;
 use Search\NormalizerInterface;
 use Search\TokenizerInterface;
-use Search\Repositories\DocumentIndexRepository;
-use Search\Repositories\InflectionRepository;
-use Search\Repositories\InfoRepository;
-use Search\Repositories\TermIndexRepository;
+use Search\Repositories\MySql\DocumentIndexRepository;
+use Search\Repositories\MySql\InflectionRepository;
+use Search\Repositories\MySql\InfoRepository;
+use Search\Repositories\MySql\TermIndexRepository;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
 
@@ -23,6 +23,9 @@ class Indexer
     private $normalizer;
     private $tokenizer;
     private $query;
+
+    private $dbh;
+    private $queryDbh;
 
     private $documentIndexRepository;
     private $inflectionRepository;
@@ -45,17 +48,36 @@ class Indexer
 
         $this->dbh = DB::create($this->config)->getConnection();
 
-        $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
-        $this->inflectionRepository = new InflectionRepository($this->dbh);
-        $this->infoRepository = new InfoRepository($this->dbh);
-        $this->termIndexRepository = new TermIndexRepository($this->dbh);
+        if ($this->config->getDriver() === 'sqlite') {
+            $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
+            $this->inflectionRepository = new InflectionRepository($this->dbh);
+            $this->infoRepository = new InfoRepository($this->dbh);
+            $this->termIndexRepository = new TermIndexRepository($this->dbh);
+        } else {
+            $this->documentIndexRepository = new DocumentIndexRepository($this->dbh);
+            $this->inflectionRepository = new InflectionRepository($this->dbh);
+            $this->infoRepository = new InfoRepository($this->dbh);
+            $this->termIndexRepository = new TermIndexRepository($this->dbh);
+        }
+    }
+
+    public function setQueryHandle(DatabaseConfig $config)
+    {
+        // Create new DB to not confuse when multiple statements are "open".
+        $this->queryDbh = DB::create($config)->getConnection();
     }
 
     public function setQuery($query, array $params = [])
     {
-        // Create new DB to not confuse when multiple statements are "open".
-        $queryDB = DB::create($this->config)->getConnection();
-        $stmt = $queryDB->prepare($query);
+        if (!$this->queryDbh) {
+            $this->setQueryHandle($this->config);
+        }
+
+        $stmt = $this->queryDbh->prepare($query);
+
+        if (!$stmt) {
+            throw new Exception("Error in query statement");
+        }
 
         foreach ($params as $param => $value) {
             $stmt->bindValue(':'.$param, $value, (ctype_digit($value) ? (PDO::PARAM_INT) : PDO::PARAM_STR));

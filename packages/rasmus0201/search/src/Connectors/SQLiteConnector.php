@@ -3,6 +3,7 @@
 namespace Search\Connectors;
 
 use Exception;
+use PDO;
 use Search\Support\DatabaseConfig;
 
 class SQLiteConnector extends AbstractConnector implements ConnectorInterface
@@ -22,7 +23,8 @@ class SQLiteConnector extends AbstractConnector implements ConnectorInterface
         // connection does. These are useful for tests or for short lifetime store
         // querying. In-memory databases may only have a single open connection.
         if ($database == ':memory:') {
-            return $this->createConnection('sqlite::memory:', $config, $options);
+            return $this->createConnection("sqlite::memory:", $config, $options);
+            return new PDO('sqlite::memory:');
         }
 
         $path = realpath($database);
@@ -35,5 +37,6 @@ class SQLiteConnector extends AbstractConnector implements ConnectorInterface
         }
 
         return $this->createConnection("sqlite:{$path}", $config, $options);
+        return new PDO("sqlite:{$path}");
     }
 }

@@ -10,8 +10,6 @@ use Search\Support\DB;
 
 class DocumentTransformer implements IndexTransformerInterface
 {
-    use CanOpenConnections;
-
     private $dbh;
 
     public function __construct(DatabaseConfig $config)

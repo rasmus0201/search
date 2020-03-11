@@ -1,11 +1,13 @@
 <?php
 
-namespace Search\Repositories;
+namespace Search\Repositories\SQLite;
 
 use PDO;
 use Search\Indexing\Term;
+use Search\Repositories\AbstractRepository;
+use Search\Repositories\InflectionRepositoryInterface;
 
-class InflectionRepository extends AbstractRepository
+class InflectionRepository extends AbstractRepository implements InflectionRepositoryInterface
 {
     public function createTableIfNotExists()
     {
@@ -102,26 +104,6 @@ class InflectionRepository extends AbstractRepository
         ");
 
         $stmt->execute($params);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getByTermIds(array $termIds)
-    {
-        if (empty($termIds)) {
-            return [];
-        }
-
-        $stmt = $this->dbh->prepare("
-            SELECT ti.term_id, i.inflection
-            FROM term_has_inflections ti
-
-            INNER JOIN inflections i ON ti.inflection_id = i.id
-
-            WHERE ti.term_id IN (".implode(',', $termIds).")
-        ");
-
-        $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

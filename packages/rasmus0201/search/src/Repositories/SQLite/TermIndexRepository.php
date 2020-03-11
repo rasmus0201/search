@@ -1,12 +1,14 @@
 <?php
 
-namespace Search\Repositories;
+namespace Search\Repositories\SQLite;
 
 use Exception;
 use PDO;
 use Search\Indexing\Term;
+use Search\Repositories\AbstractRepository;
+use Search\Repositories\TermIndexRepositoryInterface;
 
-class TermIndexRepository extends AbstractRepository
+class TermIndexRepository extends AbstractRepository implements TermIndexRepositoryInterface
 {
     public function createTableIfNotExists()
     {
@@ -34,7 +36,7 @@ class TermIndexRepository extends AbstractRepository
         ]);
     }
 
-    public function incrementHits(Term $term)
+    public function incrementHits(Term $term, $increment = 1)
     {
         $stmt = $this->dbh->prepare("
             UPDATE term_index i
@@ -44,7 +46,7 @@ class TermIndexRepository extends AbstractRepository
         ");
 
         $stmt->execute([
-            ':docs' => 1,
+            ':docs' => $increment,
             ':hits' => $term->getDocumentFrequency(),
             ':term' => $term->getTerm(),
         ]);
@@ -68,22 +70,6 @@ class TermIndexRepository extends AbstractRepository
         }
 
         return $row['id'];
-    }
-
-    public function getByIds(array $termIds)
-    {
-        if (empty($termIds)) {
-            return [];
-        }
-
-        $stmt = $this->dbh->prepare("
-            SELECT i.`id`, i.`term`, i.`num_hits`, i.`num_docs` FROM term_index i
-            WHERE i.`id` IN (".implode(',', $termIds).")
-        ");
-
-        $stmt->execute();
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public function getByKeywords(array $keywords)
@@ -116,7 +102,6 @@ class TermIndexRepository extends AbstractRepository
     public function getLowFrequencyTerms(array $keywords, $totalDocuments, $cutoffFrequency = 0.01)
     {
         $terms = $this->getByKeywords($keywords);
-        $termsId = array_column($terms, 'num_docs', 'term');
         $termsPopularity = array_column($terms, 'num_docs', 'term');
 
         $lowFreqTerms = [];

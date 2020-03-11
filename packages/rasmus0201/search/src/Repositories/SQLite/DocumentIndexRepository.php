@@ -1,11 +1,13 @@
 <?php
 
-namespace Search\Repositories;
+namespace Search\Repositories\SQLite;
 
 use PDO;
 use Search\Indexing\Term;
+use Search\Repositories\AbstractRepository;
+use Search\Repositories\DocumentIndexRepositoryInterface;
 
-class DocumentIndexRepository extends AbstractRepository
+class DocumentIndexRepository extends AbstractRepository implements DocumentIndexRepositoryInterface
 {
     public function createTableIfNotExists()
     {
@@ -121,23 +123,6 @@ class DocumentIndexRepository extends AbstractRepository
             ':limit' => $limit,
             ':length' => count($termIds)
         ]);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
-    }
-
-    public function getByIds(array $documentIds)
-    {
-        if (empty($documentIds)) {
-            return [];
-        }
-
-        $stmt = $this->dbh->prepare("
-            SELECT i.`document_id`, i.`term_id`, i.`position` FROM document_index i
-            WHERE i.`document_id` IN (" . implode(',', $documentIds) . ")
-            ORDER BY i.`document_id`, i.`position`
-        ");
-
-        $stmt->execute();
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }

@@ -4,10 +4,10 @@ namespace Search\Searching;
 
 use Search\NormalizerInterface;
 use Search\TokenizerInterface;
-use Search\Repositories\DocumentIndexRepository;
-use Search\Repositories\InfoRepository;
-use Search\Repositories\InflectionRepository;
-use Search\Repositories\TermIndexRepository;
+use Search\Repositories\MySql\DocumentIndexRepository;
+use Search\Repositories\MySql\InfoRepository;
+use Search\Repositories\MySql\InflectionRepository;
+use Search\Repositories\MySql\TermIndexRepository;
 use Search\Searching\SearchInterface;
 use Search\Support\DatabaseConfig;
 use Search\Support\DB;
