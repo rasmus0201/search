@@ -75,7 +75,7 @@
                             <input v-model="settings.bm25.b" type="number" min="0" max="100" step="0.01">
                         </label>
                         <label>
-                            BM25 K1 (k<sub>1<sub>):
+                            BM25 k<sub>1</sub>:
                             <input v-model="settings.bm25.k1" type="number" min="0" max="100" step="0.01">
                         </label>
                     </fieldset>
