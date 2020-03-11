@@ -91,7 +91,7 @@
                 <div class="grid__item search-results">
                     <div class="message">
                         <p>
-                            <span>Search hits: {{ result.total_hits }}</span>
+                            <span>Documents scored: {{ result.total_hits }}</span>
                             <br>
                             <span>Search took: {{ result.stats.formatted.execution_time }}</span>
                             <br>
